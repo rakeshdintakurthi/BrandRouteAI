@@ -1,5 +1,18 @@
 import React from 'react';
-import { Menu, Sparkles, RefreshCw, Cpu, Server } from 'lucide-react';
+import {
+  Menu,
+  Sparkles,
+  RefreshCw,
+  Cpu,
+  Server,
+  Search,
+  Calendar,
+  Mail,
+  Star,
+  Bell,
+  Moon,
+  ChevronDown
+} from 'lucide-react';
 
 export default function Header({
   systemInfo,
@@ -26,16 +39,29 @@ export default function Header({
           aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={isMobileMenuOpen}
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
 
-        <h1 className="header-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>BrandRoute AI Studio</span>
-        </h1>
+        {/* Quick Icon Bar from Screenshot */}
+        <div className="header-quick-icons">
+          <button type="button" className="header-icon-btn" title="Search governance audits">
+            <Search size={16} />
+          </button>
+          <button type="button" className="header-icon-btn" title="Editorial Calendar">
+            <Calendar size={16} />
+          </button>
+          <button type="button" className="header-icon-btn" title="Reviewer Messages">
+            <Mail size={16} />
+          </button>
+          <button type="button" className="header-icon-btn" title="Bookmarked Rules">
+            <Star size={16} />
+          </button>
+        </div>
 
+        {/* Active Brand Context Dropdown */}
         {brands && brands.length > 0 && (
-          <div className="header-brand-tag" title="Active Brand Context">
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)', fontWeight: 600 }}>BRAND:</span>
+          <div className="header-brand-select-box" title="Active Brand Context">
+            <span style={{ fontSize: '0.7rem', color: '#b9b9c3', fontWeight: 700 }}>BRAND:</span>
             <select
               className="header-brand-select"
               value={selectedBrand?.id || ''}
@@ -46,7 +72,7 @@ export default function Header({
               aria-label="Select active brand profile"
             >
               {brands.map(b => (
-                <option key={b.id} value={b.id} style={{ background: '#ffffff', color: '#0f172a' }}>
+                <option key={b.id} value={b.id} style={{ background: '#ffffff', color: '#5e5873' }}>
                   {b.name}
                 </option>
               ))}
@@ -58,32 +84,38 @@ export default function Header({
       <div className="header-right">
         {/* Backend Connectivity Status */}
         <div
-          className="status-indicator"
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: isHealthy ? '#28c76f' : '#ea5455', fontWeight: 600 }}
           title={isHealthy ? "FastAPI SQLite connected and operational" : "Connecting to backend..."}
         >
-          <span className={`status-dot ${isHealthy ? 'online' : ''}`} />
-          <Server size={13} style={{ color: 'var(--text-subtle)' }} />
-          <span>{isHealthy ? 'API Active' : 'Connecting'}</span>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isHealthy ? '#28c76f' : '#ea5455' }} />
+          <span>{isHealthy ? 'Live API' : 'Connecting'}</span>
         </div>
 
         {/* AI Model Status */}
         <div
-          className="status-indicator"
           style={{
-            borderColor: hasAi ? 'var(--primary-border)' : 'var(--border-color)',
-            background: hasAi ? 'var(--primary-light)' : '#f8fafc'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            fontSize: '0.76rem',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            background: hasAi ? '#ece9fe' : '#f8f8f8',
+            color: hasAi ? '#7367f0' : '#82868b',
+            fontWeight: 600,
+            border: '1px solid',
+            borderColor: hasAi ? '#d4cffe' : '#ebe9f1'
           }}
-          title={hasAi ? `AI Active: ${systemInfo?.ai_model}` : "Running deterministic rule-based checks"}
         >
           {hasAi ? (
             <>
-              <Sparkles size={13} style={{ color: 'var(--primary)' }} />
-              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>AI: {systemInfo?.ai_model || 'Gemini'}</span>
+              <Sparkles size={12} style={{ color: '#7367f0' }} />
+              <span>AI: {systemInfo?.ai_model || 'Gemini'}</span>
             </>
           ) : (
             <>
-              <Cpu size={13} style={{ color: 'var(--text-muted)' }} />
-              <span style={{ color: 'var(--text-muted)' }}>Engine: Deterministic</span>
+              <Cpu size={12} style={{ color: '#82868b' }} />
+              <span>Deterministic Mode</span>
             </>
           )}
         </div>
@@ -94,12 +126,44 @@ export default function Header({
           className="btn btn-secondary btn-sm"
           onClick={onSeedDemo}
           disabled={isSeeding}
-          title="Seed or restore fictional AetherCloud demo brand data"
+          title="Reset demo brand data"
           aria-label="Reset demo brand data"
         >
-          <RefreshCw size={13} className={isSeeding ? 'spin' : ''} />
-          <span>{isSeeding ? 'Seeding...' : 'Reset Demo Brand'}</span>
+          <RefreshCw size={12} className={isSeeding ? 'spin' : ''} />
+          <span>{isSeeding ? 'Seeding...' : 'Reset Brand'}</span>
         </button>
+
+        {/* Notification Bell with Badge */}
+        <button
+          type="button"
+          className="header-icon-btn"
+          style={{ position: 'relative' }}
+          title="Notifications"
+        >
+          <Bell size={17} />
+          <span style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            width: '7px',
+            height: '7px',
+            borderRadius: '50%',
+            background: '#ea5455',
+            boxShadow: '0 0 4px #ea5455'
+          }} />
+        </button>
+
+        {/* User Profile Avatar Pill matching screenshot */}
+        <div className="header-user-profile" title="Signed in as Rakesh Dintakurthi">
+          <div className="user-info-text" style={{ textAlign: 'right' }}>
+            <span className="user-name-label">Rakesh D.</span>
+            <span className="user-role-label">Compliance Lead</span>
+          </div>
+          <div className="user-avatar-circle">
+            RD
+            <span className="user-online-dot" />
+          </div>
+        </div>
       </div>
     </header>
   );

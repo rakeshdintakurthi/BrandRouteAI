@@ -83,12 +83,14 @@ export default function Sidebar({
             aria-label="BrandRoute AI Home"
             title="Go to BrandRoute AI Dashboard"
           >
-            <div className="logo-pill-icon">
-              <span className="logo-pill-inner" />
+            <div className="logo-icon-svg">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
             </div>
             <div>
               <div className="logo-title">BrandRoute <span className="logo-ai-pill">AI</span></div>
-              <div className="logo-subtitle">Governance Suite</div>
+              <div className="logo-subtitle">Enterprise Suite</div>
             </div>
           </button>
 
@@ -102,6 +104,8 @@ export default function Sidebar({
             <X size={20} />
           </button>
         </div>
+
+        <div className="sidebar-section-label">GOVERNANCE & APPS</div>
 
         <nav className="sidebar-nav">
           {navItems.map((item) => {
