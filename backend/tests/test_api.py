@@ -344,3 +344,177 @@ def test_brand_trust_report_calculation_and_approval_readiness():
     assert final_report["publication_readiness"] == "Approved for Publication"
     assert final_report["is_approval_blocked"] is False
 
+# ================= ROUND 3 TEST SUITE =================
+
+def test_visual_governance_profile():
+    brands = client.get("/api/brands").json()
+    brand_id = brands[0]["id"]
+
+    # 1. Get visual profile
+    res = client.get(f"/api/brands/{brand_id}/visual-profile")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["primary_colors"]) >= 1
+    assert data["primary_colors"][0]["hex"].startswith("#")
+
+    # 2. Update visual profile
+    update_payload = {
+        "primary_colors": [
+            {"hex": "#1d4ed8", "name": "Deep Blue", "role": "primary"},
+            {"hex": "#0f172a", "name": "Midnight", "role": "primary"}
+        ],
+        "secondary_colors": [
+            {"hex": "#10b981", "name": "Emerald", "role": "secondary"}
+        ],
+        "logo_rules": {
+            "aspect_ratio_min": 0.5,
+            "aspect_ratio_max": 3.5,
+            "clearspace_ratio": 0.15,
+            "min_resolution_px": 200
+        },
+        "typography_rules": {
+            "primary_font": "Inter",
+            "secondary_font": "Outfit",
+            "max_type_scale": 2.5
+        },
+        "guidelines": "Updated brand visual identity rules."
+    }
+    update_res = client.put(f"/api/brands/{brand_id}/visual-profile", json=update_payload)
+    assert update_res.status_code == 200
+    assert update_res.json()["primary_colors"][0]["hex"] == "#1d4ed8"
+
+def test_visual_asset_upload_and_validation():
+    brands = client.get("/api/brands").json()
+    brand_id = brands[0]["id"]
+
+    # 1. Invalid file format rejection
+    invalid_file = ("document.txt", b"Invalid content", "text/plain")
+    res = client.post(
+        f"/api/brands/{brand_id}/visual-assets/upload",
+        files={"file": invalid_file}
+    )
+    assert res.status_code == 400
+    assert "Unsupported file type" in res.json()["detail"]
+
+    # 2. Valid image upload (synthetic 10x10 PNG)
+    # 1x1 transparent png bytes
+    tiny_png = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    upload_res = client.post(
+        f"/api/brands/{brand_id}/visual-assets/upload",
+        files={"file": ("test_logo.png", tiny_png, "image/png")}
+    )
+    assert upload_res.status_code == 200
+    asset_data = upload_res.json()
+    assert asset_data["brand_id"] == brand_id
+    assert asset_data["asset_type"] == "image"
+    assert "audit_score" in asset_data
+    assert len(asset_data["dominant_colors"]) >= 1
+
+    # 3. Retrieve assets list
+    list_res = client.get(f"/api/brands/{brand_id}/visual-assets")
+    assert list_res.status_code == 200
+    assert any(a["id"] == asset_data["id"] for a in list_res.json())
+
+def test_brand_voice_samples_and_profile():
+    brands = client.get("/api/brands").json()
+    brand_id = brands[0]["id"]
+
+    # 1. Add voice sample
+    sample_payload = {
+        "title": "Cloud Governance Case Study",
+        "source": "2024 Customer Report",
+        "sample_text": "AetherCloud provides zero-trust governance architecture across mission-critical enterprise environments. Our platform guarantees deterministic enforcement of corporate policy without degrading high-throughput data processing operations."
+    }
+    create_res = client.post(f"/api/brands/{brand_id}/voice-samples", json=sample_payload)
+    assert create_res.status_code == 201
+    sample = create_res.json()
+    assert sample["word_count"] > 15
+
+    # 2. Re-generate voice profile
+    gen_res = client.post(f"/api/brands/{brand_id}/voice-profile/generate")
+    assert gen_res.status_code == 200
+    profile = gen_res.json()
+    assert profile["brand_id"] == brand_id
+    assert profile["formality_score"] > 50.0
+    assert profile["active_voice_ratio"] > 70.0
+    assert len(profile["tone_attributes"]) >= 1
+
+    # 3. Validation rejection on too brief sample
+    bad_res = client.post(f"/api/brands/{brand_id}/voice-samples", json={"title": "Too short", "sample_text": "Too few words."})
+    assert bad_res.status_code in (400, 422)
+
+def test_brand_voice_draft_analysis():
+    brands = client.get("/api/brands").json()
+    brand_id = brands[0]["id"]
+
+    # Compare conversational/informal text against learned formal brand voice
+    informal_text = {
+        "text": "Hey guys! We are super pumped to show off our crazy cool new cloud stuff that's totally gonna blow your minds. Don't worry about anything, it's pretty much awesome."
+    }
+    res = client.post(f"/api/brands/{brand_id}/voice-analysis", json=informal_text)
+    assert res.status_code == 200
+    analysis = res.json()
+    assert analysis["consistency_score"] < 80.0
+    assert len(analysis["deviations"]) >= 1
+    # Check that formality deviation was flagged
+    assert any("formality" in d["metric"].lower() for d in analysis["deviations"])
+
+def test_cms_gateway_publication_allow_and_block():
+    brands = client.get("/api/brands").json()
+    brand_id = brands[0]["id"]
+
+    # 1. Test Block on Critical Unresolved Findings (100% zero downtime + cheapest in the world)
+    blocked_payload = {
+        "brand_id": brand_id,
+        "cms_platform": "WordPress",
+        "title": "Disruptive Cloud Launch",
+        "channel": "Blog",
+        "content": "AetherCloud is the cheapest in the world and provides 100% guaranteed zero downtime for enterprise clusters.",
+        "author": "Marketer"
+    }
+    block_res = client.post("/api/integrations/cms/publish-check", json=blocked_payload)
+    assert block_res.status_code == 200
+    data = block_res.json()
+    assert data["decision"] == "BLOCK"
+    assert data["allowed"] is False
+    assert len(data["blockers"]) >= 1
+    assert data["critical_count"] >= 1
+    assert data["audit_log_id"] > 0
+
+    # 2. Test Allow on Compliant Content
+    allowed_payload = {
+        "brand_id": brand_id,
+        "cms_platform": "HubSpot",
+        "title": "Enterprise Cloud Architecture Update",
+        "channel": "Press Release",
+        "content": "AetherCloud was founded in 2021 and delivers high-reliability zero-trust governance with a 99.95% uptime SLA backed by AES-256-GCM encryption.",
+        "author": "Elena Rostova"
+    }
+    allow_res = client.post("/api/integrations/cms/publish-check", json=allowed_payload)
+    assert allow_res.status_code == 200
+    allow_data = allow_res.json()
+    assert allow_data["decision"] == "ALLOW"
+    assert allow_data["allowed"] is True
+    assert len(allow_data["blockers"]) == 0
+
+    # 3. Retrieve CMS publication audit logs
+    logs_res = client.get(f"/api/integrations/cms/logs?brand_id={brand_id}")
+    assert logs_res.status_code == 200
+    logs = logs_res.json()
+    assert len(logs) >= 2
+    # Verify both ALLOW and BLOCK records are present in SQLite audit log
+    decisions = {l["decision"] for l in logs}
+    assert "BLOCK" in decisions
+    assert "ALLOW" in decisions
+
+    # 4. Adapters info
+    adapters_res = client.get("/api/integrations/cms/adapters")
+    assert adapters_res.status_code == 200
+    adapters = adapters_res.json()["adapters"]
+    assert "WordPress" in adapters
+    assert "Contentful" in adapters
+    assert "Webflow" in adapters
+    assert "HubSpot" in adapters
+

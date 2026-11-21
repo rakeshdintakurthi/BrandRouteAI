@@ -87,4 +87,67 @@ export const api = {
       }),
     }),
   getReviewHistory: (draftId) => request(`/api/drafts/${draftId}/review-history`),
+
+  // ================= ROUND 3 API ENDPOINTS =================
+
+  // 1. Visual Governance
+  getVisualProfile: (brandId) => request(`/api/brands/${brandId}/visual-profile`),
+  updateVisualProfile: (brandId, profileData) =>
+    request(`/api/brands/${brandId}/visual-profile`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    }),
+  getVisualAssets: (brandId) => request(`/api/brands/${brandId}/visual-assets`),
+  uploadVisualAsset: async (brandId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const url = `${API_BASE}/api/brands/${brandId}/visual-assets/upload`;
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      let errStr = `Upload failed (${res.status})`;
+      try {
+        const j = await res.json();
+        errStr = j.detail || errStr;
+      } catch {}
+      throw new Error(errStr);
+    }
+    return await res.json();
+  },
+  reauditVisualAsset: (assetId) =>
+    request(`/api/visual-assets/${assetId}/audit`, { method: 'POST' }),
+  deleteVisualAsset: (assetId) =>
+    request(`/api/visual-assets/${assetId}`, { method: 'DELETE' }),
+
+  // 2. Brand Voice Intelligence
+  getVoiceSamples: (brandId) => request(`/api/brands/${brandId}/voice-samples`),
+  addVoiceSample: (brandId, sampleData) =>
+    request(`/api/brands/${brandId}/voice-samples`, {
+      method: 'POST',
+      body: JSON.stringify(sampleData),
+    }),
+  deleteVoiceSample: (brandId, sampleId) =>
+    request(`/api/brands/${brandId}/voice-samples/${sampleId}`, { method: 'DELETE' }),
+  getVoiceProfile: (brandId) => request(`/api/brands/${brandId}/voice-profile`),
+  generateVoiceProfile: (brandId) =>
+    request(`/api/brands/${brandId}/voice-profile/generate`, { method: 'POST' }),
+  analyzeDraftVoice: (draftId) =>
+    request(`/api/drafts/${draftId}/voice-analysis`, { method: 'POST' }),
+  analyzeCustomTextVoice: (brandId, text) =>
+    request(`/api/brands/${brandId}/voice-analysis`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+
+  // 3. CMS Integrations
+  checkCMSPublication: (payload) =>
+    request('/api/integrations/cms/publish-check', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getCMSLogs: (brandId) =>
+    request(brandId ? `/api/integrations/cms/logs?brand_id=${brandId}` : '/api/integrations/cms/logs'),
+  getCMSAdapters: () => request('/api/integrations/cms/adapters'),
 };

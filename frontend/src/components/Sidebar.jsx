@@ -5,6 +5,9 @@ import {
   BookOpenCheck,
   History,
   ShieldAlert,
+  Palette,
+  Mic,
+  Share2,
   Info,
   X
 } from 'lucide-react';
@@ -31,6 +34,24 @@ export default function Sidebar({
       label: 'Content Review Studio',
       icon: FileCheck2,
       badge: draftsCount > 0 ? draftsCount : null
+    },
+    {
+      id: 'visual',
+      label: 'Visual Governance',
+      icon: Palette,
+      badge: 'Multimodal'
+    },
+    {
+      id: 'voice',
+      label: 'Brand Voice Intelligence',
+      icon: Mic,
+      badge: 'Fine-Tuned'
+    },
+    {
+      id: 'cms',
+      label: 'CMS Integrations',
+      icon: Share2,
+      badge: 'Live Gate'
     },
     {
       id: 'guidelines',

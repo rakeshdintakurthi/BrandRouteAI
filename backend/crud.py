@@ -526,3 +526,309 @@ def generate_brand_trust_report(draft_id: int) -> Optional[Dict[str, Any]]:
         "generated_at": now_str,
     }
 
+# ================= ROUND 3 CRUD FUNCTIONS =================
+
+# --- Visual Governance Profiles & Assets ---
+
+def get_brand_visual_profile(brand_id: int) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM brand_visual_profiles WHERE brand_id = ?", (brand_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        data = dict(row)
+        data["primary_colors"] = json.loads(data["primary_colors"]) if data.get("primary_colors") else []
+        data["secondary_colors"] = json.loads(data["secondary_colors"]) if data.get("secondary_colors") else []
+        data["logo_rules"] = json.loads(data["logo_rules"]) if data.get("logo_rules") else {}
+        data["typography_rules"] = json.loads(data["typography_rules"]) if data.get("typography_rules") else {}
+        return data
+
+def upsert_brand_visual_profile(brand_id: int, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        primary_json = json.dumps(profile_data.get("primary_colors") or [])
+        secondary_json = json.dumps(profile_data.get("secondary_colors") or [])
+        logo_json = json.dumps(profile_data.get("logo_rules") or {})
+        typo_json = json.dumps(profile_data.get("typography_rules") or {})
+        guidelines = profile_data.get("guidelines")
+
+        cursor.execute("SELECT id FROM brand_visual_profiles WHERE brand_id = ?", (brand_id,))
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute(
+                """
+                UPDATE brand_visual_profiles
+                SET primary_colors = ?, secondary_colors = ?, logo_rules = ?, typography_rules = ?, guidelines = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE brand_id = ?
+                """,
+                (primary_json, secondary_json, logo_json, typo_json, guidelines, brand_id)
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO brand_visual_profiles (brand_id, primary_colors, secondary_colors, logo_rules, typography_rules, guidelines)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (brand_id, primary_json, secondary_json, logo_json, typo_json, guidelines)
+            )
+    return get_brand_visual_profile(brand_id)
+
+def create_visual_asset(
+    brand_id: int,
+    filename: str,
+    original_name: str,
+    mime_type: str,
+    file_size: int,
+    file_path: str,
+    width: int = 0,
+    height: int = 0,
+    asset_type: str = "image",
+    audit_score: float = 100.0,
+    audit_status: str = "pending",
+    dominant_colors: Optional[List[Dict[str, Any]]] = None,
+    audit_results: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        colors_json = json.dumps(dominant_colors or [])
+        results_json = json.dumps(audit_results or {})
+        cursor.execute(
+            """
+            INSERT INTO visual_assets (
+                brand_id, filename, original_name, mime_type, file_size, file_path,
+                width, height, asset_type, audit_score, audit_status, dominant_colors, audit_results
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                brand_id, filename, original_name, mime_type, file_size, file_path,
+                width, height, asset_type, audit_score, audit_status, colors_json, results_json
+            )
+        )
+        asset_id = cursor.lastrowid
+    return get_visual_asset(asset_id)
+
+def get_visual_asset(asset_id: int) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM visual_assets WHERE id = ?", (asset_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        data = dict(row)
+        data["dominant_colors"] = json.loads(data["dominant_colors"]) if data.get("dominant_colors") else []
+        data["audit_results"] = json.loads(data["audit_results"]) if data.get("audit_results") else {}
+        return data
+
+def list_visual_assets(brand_id: int) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM visual_assets WHERE brand_id = ? ORDER BY id DESC", (brand_id,))
+        rows = cursor.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["dominant_colors"] = json.loads(d["dominant_colors"]) if d.get("dominant_colors") else []
+            d["audit_results"] = json.loads(d["audit_results"]) if d.get("audit_results") else {}
+            result.append(d)
+        return result
+
+def update_visual_asset_audit(
+    asset_id: int,
+    audit_score: float,
+    audit_status: str,
+    dominant_colors: List[Dict[str, Any]],
+    audit_results: Dict[str, Any],
+    width: Optional[int] = None,
+    height: Optional[int] = None
+) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        colors_json = json.dumps(dominant_colors)
+        results_json = json.dumps(audit_results)
+        if width is not None and height is not None:
+            cursor.execute(
+                """
+                UPDATE visual_assets
+                SET audit_score = ?, audit_status = ?, dominant_colors = ?, audit_results = ?, width = ?, height = ?
+                WHERE id = ?
+                """,
+                (audit_score, audit_status, colors_json, results_json, width, height, asset_id)
+            )
+        else:
+            cursor.execute(
+                """
+                UPDATE visual_assets
+                SET audit_score = ?, audit_status = ?, dominant_colors = ?, audit_results = ?
+                WHERE id = ?
+                """,
+                (audit_score, audit_status, colors_json, results_json, asset_id)
+            )
+    return get_visual_asset(asset_id)
+
+def delete_visual_asset(asset_id: int) -> bool:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM visual_assets WHERE id = ?", (asset_id,))
+        return cursor.rowcount > 0
+
+# --- Brand Voice Intelligence ---
+
+def create_voice_sample(brand_id: int, title: str, source: str, sample_text: str, word_count: int) -> Dict[str, Any]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO brand_voice_samples (brand_id, title, source, sample_text, word_count)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (brand_id, title, source, sample_text, word_count)
+        )
+        sample_id = cursor.lastrowid
+        cursor.execute("SELECT * FROM brand_voice_samples WHERE id = ?", (sample_id,))
+        return dict(cursor.fetchone())
+
+def list_voice_samples(brand_id: int) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM brand_voice_samples WHERE brand_id = ? ORDER BY id DESC", (brand_id,))
+        return [dict(r) for r in cursor.fetchall()]
+
+def delete_voice_sample(sample_id: int) -> bool:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM brand_voice_samples WHERE id = ?", (sample_id,))
+        return cursor.rowcount > 0
+
+def get_brand_voice_profile(brand_id: int) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM brand_voice_profiles WHERE brand_id = ?", (brand_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        data = dict(row)
+        data["tone_attributes"] = json.loads(data["tone_attributes"]) if data.get("tone_attributes") else []
+        data["preferred_terms"] = json.loads(data["preferred_terms"]) if data.get("preferred_terms") else []
+        data["style_guidelines"] = json.loads(data["style_guidelines"]) if data.get("style_guidelines") else []
+        return data
+
+def upsert_brand_voice_profile(brand_id: int, profile_dict: Dict[str, Any]) -> Dict[str, Any]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        tone_json = json.dumps(profile_dict.get("tone_attributes") or [])
+        terms_json = json.dumps(profile_dict.get("preferred_terms") or [])
+        guidelines_json = json.dumps(profile_dict.get("style_guidelines") or [])
+        
+        cursor.execute("SELECT id FROM brand_voice_profiles WHERE brand_id = ?", (brand_id,))
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute(
+                """
+                UPDATE brand_voice_profiles
+                SET sample_count = ?, total_words = ?, formality_score = ?, avg_sentence_length = ?,
+                    vocab_complexity = ?, active_voice_ratio = ?, tone_attributes = ?, preferred_terms = ?,
+                    style_guidelines = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE brand_id = ?
+                """,
+                (
+                    profile_dict.get("sample_count", 0),
+                    profile_dict.get("total_words", 0),
+                    profile_dict.get("formality_score", 70.0),
+                    profile_dict.get("avg_sentence_length", 16.0),
+                    profile_dict.get("vocab_complexity", 65.0),
+                    profile_dict.get("active_voice_ratio", 85.0),
+                    tone_json,
+                    terms_json,
+                    guidelines_json,
+                    brand_id
+                )
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO brand_voice_profiles (
+                    brand_id, sample_count, total_words, formality_score, avg_sentence_length,
+                    vocab_complexity, active_voice_ratio, tone_attributes, preferred_terms, style_guidelines
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    brand_id,
+                    profile_dict.get("sample_count", 0),
+                    profile_dict.get("total_words", 0),
+                    profile_dict.get("formality_score", 70.0),
+                    profile_dict.get("avg_sentence_length", 16.0),
+                    profile_dict.get("vocab_complexity", 65.0),
+                    profile_dict.get("active_voice_ratio", 85.0),
+                    tone_json,
+                    terms_json,
+                    guidelines_json
+                )
+            )
+    return get_brand_voice_profile(brand_id)
+
+# --- CMS Gateway & Publication Logs ---
+
+def create_cms_publication_log(
+    brand_id: int,
+    cms_platform: str,
+    title: str,
+    channel: str,
+    external_id: Optional[str],
+    author: Optional[str],
+    decision: str,
+    allowed: int,
+    blockers: List[str],
+    findings_summary: Dict[str, Any],
+    payload_preview: Optional[str]
+) -> Dict[str, Any]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        blockers_json = json.dumps(blockers)
+        summary_json = json.dumps(findings_summary)
+        cursor.execute(
+            """
+            INSERT INTO cms_publication_logs (
+                brand_id, cms_platform, title, channel, external_id, author,
+                decision, allowed, blockers, findings_summary, payload_preview
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                brand_id, cms_platform, title, channel, external_id, author,
+                decision, allowed, blockers_json, summary_json, payload_preview
+            )
+        )
+        log_id = cursor.lastrowid
+        cursor.execute("SELECT * FROM cms_publication_logs WHERE id = ?", (log_id,))
+        row = cursor.fetchone()
+        data = dict(row)
+        data["blockers"] = json.loads(data["blockers"])
+        data["findings_summary"] = json.loads(data["findings_summary"])
+        return data
+
+def list_cms_publication_logs(brand_id: Optional[int] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if brand_id:
+            cursor.execute(
+                "SELECT * FROM cms_publication_logs WHERE brand_id = ? ORDER BY id DESC LIMIT ?",
+                (brand_id, limit)
+            )
+        else:
+            cursor.execute(
+                "SELECT * FROM cms_publication_logs ORDER BY id DESC LIMIT ?",
+                (limit,)
+            )
+        rows = cursor.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["blockers"] = json.loads(d["blockers"]) if d.get("blockers") else []
+            d["findings_summary"] = json.loads(d["findings_summary"]) if d.get("findings_summary") else {}
+            result.append(d)
+        return result
+
+

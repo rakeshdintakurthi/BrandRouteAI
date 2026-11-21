@@ -134,3 +134,95 @@ def init_db():
                 FOREIGN KEY (draft_id) REFERENCES content_drafts(id) ON DELETE CASCADE
             );
         """)
+
+        # 7. Brand Visual Profiles (Round 3 Improvement 1)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS brand_visual_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                brand_id INTEGER NOT NULL UNIQUE,
+                primary_colors TEXT NOT NULL DEFAULT '[]',   -- JSON array of {hex, name, role}
+                secondary_colors TEXT NOT NULL DEFAULT '[]', -- JSON array of {hex, name, role}
+                logo_rules TEXT NOT NULL DEFAULT '{}',       -- JSON {min_ratio, max_ratio, clearspace_ratio, min_res}
+                typography_rules TEXT NOT NULL DEFAULT '{}', -- JSON {primary_font, secondary_font, max_scale}
+                guidelines TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (brand_id) REFERENCES brand_profiles(id) ON DELETE CASCADE
+            );
+        """)
+
+        # 8. Visual Assets & Visual Audit Reports (Round 3 Improvement 1)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS visual_assets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                brand_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                original_name TEXT NOT NULL,
+                mime_type TEXT NOT NULL,
+                file_size INTEGER NOT NULL,
+                file_path TEXT NOT NULL,
+                width INTEGER DEFAULT 0,
+                height INTEGER DEFAULT 0,
+                asset_type TEXT NOT NULL DEFAULT 'image', -- 'image' or 'pptx'
+                audit_score REAL DEFAULT 100.0,
+                audit_status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'passed', 'flagged', 'failed'
+                dominant_colors TEXT DEFAULT '[]',            -- JSON array of {hex, percentage}
+                audit_results TEXT DEFAULT '{}',              -- JSON {violations, score, color_check, logo_check, slide_reports}
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (brand_id) REFERENCES brand_profiles(id) ON DELETE CASCADE
+            );
+        """)
+
+        # 9. Brand Voice Historical Samples (Round 3 Improvement 3)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS brand_voice_samples (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                brand_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                source TEXT,
+                sample_text TEXT NOT NULL,
+                word_count INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (brand_id) REFERENCES brand_profiles(id) ON DELETE CASCADE
+            );
+        """)
+
+        # 10. Brand Voice Learned Profiles (Round 3 Improvement 3)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS brand_voice_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                brand_id INTEGER NOT NULL UNIQUE,
+                sample_count INTEGER NOT NULL DEFAULT 0,
+                total_words INTEGER NOT NULL DEFAULT 0,
+                formality_score REAL NOT NULL DEFAULT 70.0,
+                avg_sentence_length REAL NOT NULL DEFAULT 16.0,
+                vocab_complexity REAL NOT NULL DEFAULT 65.0,
+                active_voice_ratio REAL NOT NULL DEFAULT 85.0,
+                tone_attributes TEXT NOT NULL DEFAULT '[]', -- JSON array of strings
+                preferred_terms TEXT NOT NULL DEFAULT '[]', -- JSON array of frequent brand terms
+                style_guidelines TEXT NOT NULL DEFAULT '[]', -- JSON array of extracted guidelines
+                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (brand_id) REFERENCES brand_profiles(id) ON DELETE CASCADE
+            );
+        """)
+
+        # 11. CMS Publication Webhook Logs (Round 3 Improvement 2)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS cms_publication_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                brand_id INTEGER NOT NULL,
+                cms_platform TEXT NOT NULL, -- 'WordPress', 'Contentful', 'Webflow', 'HubSpot', 'Custom'
+                title TEXT NOT NULL,
+                channel TEXT NOT NULL,
+                external_id TEXT,
+                author TEXT,
+                decision TEXT NOT NULL, -- 'ALLOW' or 'BLOCK'
+                allowed INTEGER NOT NULL DEFAULT 0,
+                blockers TEXT NOT NULL DEFAULT '[]', -- JSON array of blocking reasons
+                findings_summary TEXT NOT NULL DEFAULT '{}', -- JSON {critical, high, medium, low, total}
+                payload_preview TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (brand_id) REFERENCES brand_profiles(id) ON DELETE CASCADE
+            );
+        """)

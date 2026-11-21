@@ -4,6 +4,9 @@ import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import DashboardView from './components/DashboardView';
 import ContentAuditView from './components/ContentAuditView';
+import VisualGovernanceView from './components/VisualGovernanceView';
+import BrandVoiceView from './components/BrandVoiceView';
+import CMSIntegrationsView from './components/CMSIntegrationsView';
 import BrandGuidelinesView from './components/BrandGuidelinesView';
 import AuditHistoryView from './components/AuditHistoryView';
 import NotFoundView from './components/NotFoundView';
@@ -14,7 +17,7 @@ import ReviewNotesModal from './components/ReviewNotesModal';
 import { api } from './api';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
-const VALID_VIEWS = ['dashboard', 'audit', 'guidelines', 'history'];
+const VALID_VIEWS = ['dashboard', 'audit', 'visual', 'voice', 'cms', 'guidelines', 'history'];
 
 const VIEW_METADATA = {
   dashboard: {
@@ -24,6 +27,18 @@ const VIEW_METADATA = {
   audit: {
     title: 'Content Review Studio | BrandRoute AI',
     description: 'Interactive pre-publication marketing draft editor with brand voice rules, terminology checks, and Brand Trust Reports.'
+  },
+  visual: {
+    title: 'Visual & Layout Governance | BrandRoute AI',
+    description: 'Multimodal asset auditing, color extraction, typography checks, and presentation slide deck compliance.'
+  },
+  voice: {
+    title: 'Brand Voice Intelligence | BrandRoute AI',
+    description: 'Automated stylistic DNA profiling, formality benchmarks, and draft tone consistency scoring.'
+  },
+  cms: {
+    title: 'CMS & Headless Publishing Gate | BrandRoute AI',
+    description: 'Pre-flight webhook checkpoint enforcing brand policies before publishing to WordPress, Webflow, Contentful, and custom CMSs.'
   },
   guidelines: {
     title: 'Brand Rules & Facts | BrandRoute AI',
@@ -475,6 +490,28 @@ export default function App() {
               findings={findings}
               reviewHistory={reviewHistory}
               openReviewNotesModal={openReviewNotesModal}
+            />
+          )}
+
+          {activeView === 'visual' && (
+            <VisualGovernanceView
+              selectedBrand={selectedBrand}
+              onToast={addToast}
+            />
+          )}
+
+          {activeView === 'voice' && (
+            <BrandVoiceView
+              selectedBrand={selectedBrand}
+              drafts={drafts}
+              onToast={addToast}
+            />
+          )}
+
+          {activeView === 'cms' && (
+            <CMSIntegrationsView
+              selectedBrand={selectedBrand}
+              onToast={addToast}
             />
           )}
 

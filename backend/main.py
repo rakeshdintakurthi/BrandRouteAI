@@ -1,9 +1,14 @@
+import os
+import shutil
 import logging
+from pathlib import Path
 from contextlib import asynccontextmanager
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Query, status
+from datetime import datetime, timezone
+from typing import List, Optional, Dict, Any
+from fastapi import FastAPI, HTTPException, Query, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
 from backend.database import init_db
@@ -24,10 +29,23 @@ from backend.models import (
     ReviewHistoryResponse,
     AnalysisRunResponse,
     BrandTrustReportResponse,
+    VisualProfileCreate,
+    VisualProfileResponse,
+    VisualAssetResponse,
+    VoiceSampleCreate,
+    VoiceSampleResponse,
+    VoiceProfileResponse,
+    VoiceAnalysisResponse,
+    CMSPublishCheckRequest,
+    CMSPublishCheckResponse,
+    CMSPublicationLogResponse,
 )
 import backend.crud as crud
 from backend.rules_engine import analyze_draft_with_rules
 from backend.ai_engine import analyze_draft_with_gemini
+from backend.visual_engine import audit_image_asset, audit_pptx_asset
+from backend.voice_engine import generate_brand_voice_profile, compare_draft_to_voice_profile
+from backend.cms_gateway import evaluate_cms_publication, get_platform_adapters_info
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -59,6 +77,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static uploads
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # ----------------- BASE & HEALTH ENDPOINTS -----------------
 
@@ -308,3 +331,279 @@ def seed_demo():
     """Seeds or resets the demo brand with rules, facts, and drafts."""
     brand_id = seed_demo_data_if_empty()
     return {"message": "Demo data seeded successfully", "brand_id": brand_id}
+
+# ================= ROUND 3 ENDPOINTS =================
+
+# ----------------- 1. VISUAL GOVERNANCE -----------------
+
+@app.get("/api/brands/{brand_id}/visual-profile", response_model=VisualProfileResponse, tags=["Visual Governance"])
+def get_visual_profile(brand_id: int):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    profile = crud.get_brand_visual_profile(brand_id)
+    if not profile:
+        # Generate default starter profile
+        profile = crud.upsert_brand_visual_profile(brand_id, {
+            "primary_colors": [
+                {"hex": "#2563eb", "name": "Royal Cobalt", "role": "primary"},
+                {"hex": "#0f172a", "name": "Deep Midnight Navy", "role": "primary"}
+            ],
+            "secondary_colors": [
+                {"hex": "#10b981", "name": "Emerald Growth", "role": "secondary"},
+                {"hex": "#6366f1", "name": "Electric Indigo", "role": "secondary"}
+            ],
+            "logo_rules": {"aspect_ratio_min": 0.5, "aspect_ratio_max": 3.8, "clearspace_ratio": 0.15, "min_resolution_px": 150},
+            "typography_rules": {"primary_font": "Inter", "secondary_font": "Outfit", "max_type_scale": 2.5},
+            "guidelines": "Ensure high contrast on dark backgrounds. Primary buttons must use #2563eb."
+        })
+    return profile
+
+@app.put("/api/brands/{brand_id}/visual-profile", response_model=VisualProfileResponse, tags=["Visual Governance"])
+def update_visual_profile(brand_id: int, payload: VisualProfileCreate):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    return crud.upsert_brand_visual_profile(brand_id, payload.model_dump())
+
+@app.get("/api/brands/{brand_id}/visual-assets", response_model=List[VisualAssetResponse], tags=["Visual Governance"])
+def get_visual_assets(brand_id: int):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    return crud.list_visual_assets(brand_id)
+
+@app.post("/api/brands/{brand_id}/visual-assets/upload", response_model=VisualAssetResponse, tags=["Visual Governance"])
+async def upload_visual_asset(brand_id: int, file: UploadFile = File(...)):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+
+    # Validate file extension and MIME type
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".pptx"}
+    file_ext = Path(file.filename or "").suffix.lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{file_ext}'. Allowed formats: PNG, JPG, JPEG, PPTX."
+        )
+
+    # Validate file size (max 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024 # 10 MB
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File exceeds 10MB limit (uploaded: {round(len(content) / (1024*1024), 2)}MB)."
+        )
+
+    # Generate safe unique filename
+    safe_filename = f"asset_{brand_id}_{int(datetime.now(timezone.utc).timestamp())}_{Path(file.filename).name}"
+    save_path = UPLOAD_DIR / safe_filename
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    asset_type = "pptx" if file_ext == ".pptx" else "image"
+    relative_url = f"/uploads/{safe_filename}"
+
+    # Fetch brand visual identity guidelines
+    v_profile = crud.get_brand_visual_profile(brand_id)
+    if not v_profile:
+        v_profile = crud.upsert_brand_visual_profile(brand_id, {
+            "primary_colors": [{"hex": "#2563eb", "name": "Royal Cobalt", "role": "primary"}, {"hex": "#0f172a", "name": "Midnight Navy", "role": "primary"}],
+            "secondary_colors": [{"hex": "#10b981", "name": "Emerald", "role": "secondary"}],
+            "logo_rules": {"aspect_ratio_min": 0.5, "aspect_ratio_max": 3.8, "min_resolution_px": 100},
+            "typography_rules": {"primary_font": "Inter", "secondary_font": "Outfit"}
+        })
+
+    # Run audit immediately
+    if asset_type == "pptx":
+        audit_res = audit_pptx_asset(str(save_path), v_profile, file.filename)
+        width, height = 1920, 1080
+    else:
+        audit_res = audit_image_asset(str(save_path), v_profile, file.filename)
+        width = audit_res.get("dimensions", {}).get("width", 800)
+        height = audit_res.get("dimensions", {}).get("height", 600)
+
+    asset = crud.create_visual_asset(
+        brand_id=brand_id,
+        filename=safe_filename,
+        original_name=file.filename or safe_filename,
+        mime_type=file.content_type or ("application/vnd.openxmlformats-officedocument.presentationml.presentation" if file_ext == ".pptx" else "image/png"),
+        file_size=len(content),
+        file_path=relative_url,
+        width=width,
+        height=height,
+        asset_type=asset_type,
+        audit_score=audit_res.get("score", 100.0),
+        audit_status=audit_res.get("status", "passed"),
+        dominant_colors=audit_res.get("dominant_colors", []),
+        audit_results=audit_res
+    )
+
+    return asset
+
+@app.post("/api/visual-assets/{asset_id}/audit", response_model=VisualAssetResponse, tags=["Visual Governance"])
+def reaudit_visual_asset(asset_id: int):
+    asset = crud.get_visual_asset(asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail=f"Visual asset #{asset_id} not found")
+
+    brand_id = asset["brand_id"]
+    v_profile = crud.get_brand_visual_profile(brand_id) or {}
+    
+    file_path = UPLOAD_DIR / asset["filename"]
+    if not file_path.exists():
+        # Use synthetic re-audit if physical file is absent
+        audit_res = asset.get("audit_results") or {
+            "score": 92.0, "status": "passed", "violations": [], "dominant_colors": asset.get("dominant_colors", [])
+        }
+        return asset
+
+    if asset["asset_type"] == "pptx":
+        audit_res = audit_pptx_asset(str(file_path), v_profile, asset["original_name"])
+    else:
+        audit_res = audit_image_asset(str(file_path), v_profile, asset["original_name"])
+
+    updated = crud.update_visual_asset_audit(
+        asset_id=asset_id,
+        audit_score=audit_res["score"],
+        audit_status=audit_res["status"],
+        dominant_colors=audit_res.get("dominant_colors", []),
+        audit_results=audit_res,
+        width=audit_res.get("dimensions", {}).get("width"),
+        height=audit_res.get("dimensions", {}).get("height")
+    )
+    return updated
+
+@app.delete("/api/visual-assets/{asset_id}", tags=["Visual Governance"])
+def delete_visual_asset(asset_id: int):
+    asset = crud.get_visual_asset(asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail=f"Visual asset #{asset_id} not found")
+    crud.delete_visual_asset(asset_id)
+    return {"success": True, "message": f"Asset #{asset_id} removed"}
+
+# ----------------- 2. BRAND VOICE INTELLIGENCE -----------------
+
+@app.get("/api/brands/{brand_id}/voice-samples", response_model=List[VoiceSampleResponse], tags=["Brand Voice Intelligence"])
+def get_voice_samples(brand_id: int):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    return crud.list_voice_samples(brand_id)
+
+@app.post("/api/brands/{brand_id}/voice-samples", response_model=VoiceSampleResponse, status_code=status.HTTP_201_CREATED, tags=["Brand Voice Intelligence"])
+def add_voice_sample(brand_id: int, payload: VoiceSampleCreate):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    
+    words = len(payload.sample_text.strip().split())
+    if words < 10:
+        raise HTTPException(status_code=400, detail="Writing sample is too brief (minimum 10 words required).")
+
+    sample = crud.create_voice_sample(
+        brand_id=brand_id,
+        title=payload.title,
+        source=payload.source or "Marketing Sample",
+        sample_text=payload.sample_text,
+        word_count=words
+    )
+    return sample
+
+@app.delete("/api/brands/{brand_id}/voice-samples/{sample_id}", tags=["Brand Voice Intelligence"])
+def delete_voice_sample(brand_id: int, sample_id: int):
+    success = crud.delete_voice_sample(sample_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Voice sample not found")
+    return {"success": True, "message": f"Voice sample #{sample_id} deleted"}
+
+@app.get("/api/brands/{brand_id}/voice-profile", response_model=VoiceProfileResponse, tags=["Brand Voice Intelligence"])
+def get_voice_profile(brand_id: int):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    profile = crud.get_brand_voice_profile(brand_id)
+    if not profile:
+        samples = crud.list_voice_samples(brand_id)
+        learned = generate_brand_voice_profile(samples, brand["name"])
+        profile = crud.upsert_brand_voice_profile(brand_id, learned)
+    return profile
+
+@app.post("/api/brands/{brand_id}/voice-profile/generate", response_model=VoiceProfileResponse, tags=["Brand Voice Intelligence"])
+def generate_voice_profile_endpoint(brand_id: int):
+    brand = crud.get_brand_profile(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand profile #{brand_id} not found")
+    samples = crud.list_voice_samples(brand_id)
+    learned = generate_brand_voice_profile(samples, brand["name"])
+    return crud.upsert_brand_voice_profile(brand_id, learned)
+
+@app.post("/api/drafts/{draft_id}/voice-analysis", response_model=VoiceAnalysisResponse, tags=["Brand Voice Intelligence"])
+def analyze_draft_voice(draft_id: int):
+    draft = crud.get_content_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail=f"Content draft #{draft_id} not found")
+    brand_id = draft["brand_id"]
+    profile = crud.get_brand_voice_profile(brand_id)
+    if not profile:
+        samples = crud.list_voice_samples(brand_id)
+        brand = crud.get_brand_profile(brand_id) or {"name": "Brand"}
+        profile = crud.upsert_brand_voice_profile(brand_id, generate_brand_voice_profile(samples, brand["name"]))
+
+    analysis = compare_draft_to_voice_profile(draft["current_text"], profile)
+    analysis["draft_id"] = draft_id
+    analysis["brand_id"] = brand_id
+    analysis["analyzed_at"] = datetime.now(timezone.utc).isoformat()
+    return analysis
+
+@app.post("/api/brands/{brand_id}/voice-analysis", response_model=VoiceAnalysisResponse, tags=["Brand Voice Intelligence"])
+def analyze_custom_text_voice(brand_id: int, payload: Dict[str, str]):
+    text = payload.get("text", "")
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Text field cannot be empty.")
+    profile = crud.get_brand_voice_profile(brand_id)
+    if not profile:
+        samples = crud.list_voice_samples(brand_id)
+        brand = crud.get_brand_profile(brand_id) or {"name": "Brand"}
+        profile = crud.upsert_brand_voice_profile(brand_id, generate_brand_voice_profile(samples, brand["name"]))
+
+    analysis = compare_draft_to_voice_profile(text, profile)
+    analysis["draft_id"] = None
+    analysis["brand_id"] = brand_id
+    analysis["analyzed_at"] = datetime.now(timezone.utc).isoformat()
+    return analysis
+
+# ----------------- 3. CMS & HEADLESS INTEGRATIONS -----------------
+
+@app.post("/api/integrations/cms/publish-check", response_model=CMSPublishCheckResponse, tags=["CMS Integrations"])
+def check_cms_publication(payload: CMSPublishCheckRequest):
+    brand = crud.get_brand_profile(payload.brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"Brand #{payload.brand_id} not found")
+
+    result = evaluate_cms_publication(
+        brand_id=payload.brand_id,
+        cms_platform=payload.cms_platform,
+        title=payload.title,
+        channel=payload.channel,
+        content=payload.content,
+        author=payload.author,
+        external_id=payload.external_id,
+        metadata=payload.metadata
+    )
+    return result
+
+@app.get("/api/integrations/cms/logs", response_model=List[CMSPublicationLogResponse], tags=["CMS Integrations"])
+def get_cms_publication_logs(brand_id: Optional[int] = Query(None), limit: int = Query(50)):
+    return crud.list_cms_publication_logs(brand_id=brand_id, limit=limit)
+
+@app.get("/api/integrations/cms/adapters", tags=["CMS Integrations"])
+def get_cms_adapters():
+    return {
+        "adapters": get_platform_adapters_info(),
+        "gateway_endpoint": "/api/integrations/cms/publish-check",
+        "documentation": "Connect any CMS webhook to pre-validate publication content against BrandRoute governance rules."
+    }
+
