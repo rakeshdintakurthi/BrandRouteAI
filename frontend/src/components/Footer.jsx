@@ -24,38 +24,38 @@ export default function Footer({ onNavigate, isHealthy = true }) {
           <div className="footer-links-group">
             <div className="footer-col">
               <h4 className="footer-heading">Navigation</h4>
-              <ul className="footer-nav-list">
-                <li>
+              <ul className="footer-nav-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('dashboard')}>
                     Dashboard Overview
                   </button>
                 </li>
-                <li>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('audit')}>
                     Content Review Studio
                   </button>
                 </li>
-                <li>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('visual')}>
                     Visual Governance
                   </button>
                 </li>
-                <li>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('voice')}>
                     Brand Voice Intelligence
                   </button>
                 </li>
-                <li>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('cms')}>
                     CMS Integrations Gate
                   </button>
                 </li>
-                <li>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('guidelines')}>
                     Brand Rules & Facts
                   </button>
                 </li>
-                <li>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('history')}>
                     Audit & Review Log
                   </button>
@@ -65,8 +65,8 @@ export default function Footer({ onNavigate, isHealthy = true }) {
 
             <div className="footer-col">
               <h4 className="footer-heading">Platform & Source</h4>
-              <ul className="footer-nav-list">
-                <li>
+              <ul className="footer-nav-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                <li style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   <a
                     href="https://github.com/rakeshdintakurthi/BrandRouteAI.git"
                     target="_blank"

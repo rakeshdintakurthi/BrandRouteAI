@@ -121,28 +121,28 @@ export default function CMSIntegrationsView({ selectedBrand, onToast }) {
   return (
     <div className="view-container animate-fade-in">
       {/* Top Hero Banner */}
-      <div className="dashboard-hero-card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)', border: '1px solid #312e81' }}>
+      <div className="dashboard-hero-card glass-card" style={{ marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.95)', borderRadius: '24px', padding: '24px 28px', boxShadow: '0 10px 40px rgba(60, 100, 160, 0.08)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0.75rem', borderRadius: '999px', background: 'rgba(115, 103, 240, 0.2)', border: '1px solid rgba(115, 103, 240, 0.4)', color: '#c7d2fe', fontSize: '0.75rem', fontWeight: '600', marginBottom: '0.75rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0.75rem', borderRadius: '999px', background: 'rgba(255, 106, 26, 0.1)', border: '1px solid rgba(255, 106, 26, 0.25)', color: '#FF6A1A', fontSize: '0.75rem', fontWeight: '700', marginBottom: '0.75rem' }}>
               <Share2 size={14} /> HEADLESS GOVERNANCE CHECKPOINT
             </div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#ffffff', marginBottom: '0.5rem' }}>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#1F2A44', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
               CMS & Headless Publishing Gate
             </h1>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '650px', lineHeight: '1.5' }}>
+            <p style={{ color: '#64748B', fontSize: '0.9rem', maxWidth: '650px', lineHeight: '1.5', margin: 0 }}>
               Intercepts pre-publication attempts from WordPress, Webflow, Contentful, and custom headless CMSs. Automatically blocks content containing unresolved critical claims, fact deviations, or unapproved terminology.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#4ade80' }}>ACTIVE</div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Webhook Gateway</div>
+            <div style={{ background: '#F8FAFC', padding: '0.75rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#16A34A' }}>ACTIVE</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B' }}>Webhook Gateway</div>
             </div>
-            <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>{logs.length}</div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Audited Releases</div>
+            <div style={{ background: '#F8FAFC', padding: '0.75rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1F2A44' }}>{logs.length}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B' }}>Audited Releases</div>
             </div>
           </div>
         </div>

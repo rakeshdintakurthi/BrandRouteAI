@@ -14,8 +14,9 @@ import NewDraftModal from './components/NewDraftModal';
 import NewRuleModal from './components/NewRuleModal';
 import NewFactModal from './components/NewFactModal';
 import ReviewNotesModal from './components/ReviewNotesModal';
+import DemoLoginModal, { DEMO_USERS } from './components/DemoLoginModal';
 import { api } from './api';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, ShieldAlert, LogIn } from 'lucide-react';
 
 const VALID_VIEWS = ['dashboard', 'audit', 'visual', 'voice', 'cms', 'guidelines', 'history'];
 
@@ -81,11 +82,35 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
 
-  // Modals
+  // Modals & Demo Authentication
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('brandroute_demo_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEMO_USERS[0]; // Rakesh D. (Compliance Lead)
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isNewDraftOpen, setIsNewDraftOpen] = useState(false);
   const [isNewRuleOpen, setIsNewRuleOpen] = useState(false);
   const [isNewFactOpen, setIsNewFactOpen] = useState(false);
   const [notesModalData, setNotesModalData] = useState(null);
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('brandroute_demo_user', JSON.stringify(user));
+    } catch {}
+    addToast('success', `Signed in as ${user.name} (${user.title})`);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('brandroute_demo_user');
+    } catch {}
+    addToast('info', 'Signed out from BrandRoute AI.');
+  };
 
   // Toasts
   const [toasts, setToasts] = useState([]);
@@ -457,9 +482,47 @@ export default function App() {
         systemInfo={systemInfo}
         health={health}
         onOpenNewDraftModal={() => setIsNewDraftOpen(true)}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
 
       {/* Main Layout Area */}
+      {!currentUser && (
+        <div style={{ maxWidth: '1400px', margin: '0 auto 14px', padding: '0 24px' }}>
+          <div
+            className="glass-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px',
+              borderRadius: '16px',
+              background: 'rgba(255, 247, 237, 0.92)',
+              border: '1px solid #FED7AA',
+              flexWrap: 'wrap',
+              gap: '12px',
+              boxShadow: '0 4px 14px rgba(255, 106, 26, 0.08)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <ShieldAlert size={18} color="#EA580C" />
+              <span style={{ fontSize: '0.85rem', color: '#9A3412', fontWeight: 600 }}>
+                Guest Mode Active: Sign in with an enterprise demo persona to test role-based governance approvals and CMS publication checks.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsLoginModalOpen(true)}
+              className="btn btn-primary"
+              style={{ padding: '6px 16px', fontSize: '0.8rem' }}
+            >
+              <LogIn size={14} />
+              <span>Sign In with Demo Persona</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="main-layout">
         <main className="content-body" role="main">
           {activeView === 'dashboard' && (
@@ -546,6 +609,14 @@ export default function App() {
       </div>
 
       {/* Modals */}
+      <DemoLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        currentUser={currentUser}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+      />
+
       <NewDraftModal
         isOpen={isNewDraftOpen}
         onClose={() => setIsNewDraftOpen(false)}

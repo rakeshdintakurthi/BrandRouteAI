@@ -19,7 +19,9 @@ import {
   Layers,
   Sparkles,
   Menu,
-  X
+  X,
+  UserCheck,
+  LogIn
 } from 'lucide-react';
 
 export default function TopNav({
@@ -36,7 +38,9 @@ export default function TopNav({
   isSeeding = false,
   systemInfo,
   health,
-  onOpenNewDraftModal
+  onOpenNewDraftModal,
+  currentUser,
+  onOpenLoginModal
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHealthy = health?.status === 'healthy';
@@ -220,13 +224,39 @@ export default function TopNav({
             </div>
           )}
 
+          {/* Demo Login / Role Switcher Pill */}
+          <button
+            type="button"
+            onClick={onOpenLoginModal}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '9999px',
+              background: currentUser ? '#F1F5F9' : 'linear-gradient(135deg, #FF6A1A 0%, #FF8C42 100%)',
+              color: currentUser ? '#1F2A44' : '#FFFFFF',
+              border: currentUser ? '1px solid #CBD5E1' : 'none',
+              fontSize: '0.76rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: currentUser ? 'none' : '0 2px 8px rgba(255, 106, 26, 0.35)',
+              transition: 'all 0.15s ease'
+            }}
+            title="Click to Switch Demo Role or Sign In / Out"
+          >
+            <UserCheck size={13} color={currentUser ? '#FF6A1A' : '#FFFFFF'} />
+            <span>{currentUser ? currentUser.name : 'Demo Login'}</span>
+          </button>
+
           {/* Avatar Profile */}
           <div
+            onClick={onOpenLoginModal}
             style={{
               width: '32px',
               height: '32px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1F2A44 0%, #3B82F6 100%)',
+              background: currentUser?.gradient || 'linear-gradient(135deg, #1F2A44 0%, #3B82F6 100%)',
               color: '#ffffff',
               fontSize: '0.74rem',
               fontWeight: 800,
@@ -236,9 +266,9 @@ export default function TopNav({
               boxShadow: '0 2px 8px rgba(31, 42, 68, 0.25)',
               cursor: 'pointer'
             }}
-            title="Rakesh D. (Compliance Lead)"
+            title={currentUser ? `${currentUser.name} (${currentUser.title}) — Click to Switch Role` : 'Click to Sign In'}
           >
-            RD
+            {currentUser ? currentUser.avatar : <LogIn size={13} />}
           </div>
 
           {/* Mobile Hamburger (< 1024px) */}
