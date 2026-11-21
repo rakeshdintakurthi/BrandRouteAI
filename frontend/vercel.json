@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://brandproof-api-c5jf.onrender.com/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://brandproof-api-c5jf.onrender.com/health"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

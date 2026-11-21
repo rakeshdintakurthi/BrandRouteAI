@@ -1,6 +1,11 @@
-// API Client for BrandProof FastAPI Backend
+// API Client for BrandProof / BrandRoute AI FastAPI Backend
 
-const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const envBase = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const defaultProdBase = 'https://brandproof-api-c5jf.onrender.com';
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+// If VITE_API_BASE_URL is set, use it. On localhost use Vite proxy (''). On deployed domains (e.g. Vercel), fallback to live Render backend.
+const rawBase = envBase || (isLocal ? '' : defaultProdBase);
 const API_BASE = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 async function request(endpoint, options = {}) {
