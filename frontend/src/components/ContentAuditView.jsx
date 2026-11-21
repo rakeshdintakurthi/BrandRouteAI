@@ -457,11 +457,18 @@ export default function ContentAuditView({
           </div>
 
           {studioTab === 'report' ? (
-            <BrandTrustReport
-              draftId={draft.id}
-              findingsCount={findings.length}
-              onRefreshTrigger={draft.updated_at}
-            />
+            draft ? (
+              <BrandTrustReport
+                draftId={draft.id}
+                findingsCount={findings.length}
+                onRefreshTrigger={draft.updated_at}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-subtle)' }}>
+                <p style={{ fontWeight: 600, color: 'var(--text-main)' }}>No draft selected</p>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>Select an active draft above to inspect its Brand Trust Report.</p>
+              </div>
+            )
           ) : (
             <>
               {/* Findings List */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -99,10 +99,10 @@ export default function BrandTrustReport({
 
   if (!report) return null;
 
-  const criticalCount = report.unresolved_by_severity.critical || 0;
-  const highCount = report.unresolved_by_severity.high || 0;
-  const mediumCount = report.unresolved_by_severity.medium || 0;
-  const lowCount = report.unresolved_by_severity.low || 0;
+  const criticalCount = report.unresolved_by_severity?.critical || 0;
+  const highCount = report.unresolved_by_severity?.high || 0;
+  const mediumCount = report.unresolved_by_severity?.medium || 0;
+  const lowCount = report.unresolved_by_severity?.low || 0;
 
   const isApproved = report.review_status === 'Approved';
   const isBlocked = report.is_approval_blocked;
@@ -230,10 +230,10 @@ export default function BrandTrustReport({
             Resolved Corrections
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#16a34a', margin: '4px 0', fontFamily: 'var(--font-heading)' }}>
-            {report.resolved_summary.total_resolved}
+            {report.resolved_summary?.total_resolved || 0}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {report.resolved_summary.accepted} Accepted • {report.resolved_summary.edited} Edited • {report.resolved_summary.dismissed} Dismissed
+            {report.resolved_summary?.accepted || 0} Accepted • {report.resolved_summary?.edited || 0} Edited • {report.resolved_summary?.dismissed || 0} Dismissed
           </div>
         </div>
 
@@ -243,10 +243,10 @@ export default function BrandTrustReport({
             Total Open Issues
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--primary)', margin: '4px 0', fontFamily: 'var(--font-heading)' }}>
-            {report.total_unresolved}
+            {report.total_unresolved || 0}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {report.unresolved_by_category.fact_conflicts} Fact • {report.unresolved_by_category.prohibited_claims} Claims • {report.unresolved_by_category.terminology} Terms
+            {report.unresolved_by_category?.fact_conflicts || 0} Fact • {report.unresolved_by_category?.prohibited_claims || 0} Claims • {report.unresolved_by_category?.terminology || 0} Terms
           </div>
         </div>
       </div>
@@ -262,8 +262,8 @@ export default function BrandTrustReport({
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Fact Conflicts</span>
-              <span className={`badge ${report.unresolved_by_category.fact_conflicts > 0 ? 'badge-critical' : 'badge-low'}`}>
-                {report.unresolved_by_category.fact_conflicts} open
+              <span className={`badge ${(report.unresolved_by_category?.fact_conflicts || 0) > 0 ? 'badge-critical' : 'badge-low'}`}>
+                {report.unresolved_by_category?.fact_conflicts || 0} open
               </span>
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -274,8 +274,8 @@ export default function BrandTrustReport({
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Prohibited Claims</span>
-              <span className={`badge ${report.unresolved_by_category.prohibited_claims > 0 ? 'badge-high' : 'badge-low'}`}>
-                {report.unresolved_by_category.prohibited_claims} open
+              <span className={`badge ${(report.unresolved_by_category?.prohibited_claims || 0) > 0 ? 'badge-high' : 'badge-low'}`}>
+                {report.unresolved_by_category?.prohibited_claims || 0} open
               </span>
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -286,8 +286,8 @@ export default function BrandTrustReport({
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Terminology</span>
-              <span className={`badge ${report.unresolved_by_category.terminology > 0 ? 'badge-medium' : 'badge-low'}`}>
-                {report.unresolved_by_category.terminology} open
+              <span className={`badge ${(report.unresolved_by_category?.terminology || 0) > 0 ? 'badge-medium' : 'badge-low'}`}>
+                {report.unresolved_by_category?.terminology || 0} open
               </span>
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -298,8 +298,8 @@ export default function BrandTrustReport({
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Voice & Tone</span>
-              <span className={`badge ${report.unresolved_by_category.voice_and_tone > 0 ? 'badge-low' : 'badge-low'}`}>
-                {report.unresolved_by_category.voice_and_tone} open
+              <span className={`badge ${(report.unresolved_by_category?.voice_and_tone || 0) > 0 ? 'badge-low' : 'badge-low'}`}>
+                {report.unresolved_by_category?.voice_and_tone || 0} open
               </span>
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
