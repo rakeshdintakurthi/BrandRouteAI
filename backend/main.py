@@ -1,7 +1,14 @@
 import os
+import sys
 import shutil
 import logging
 from pathlib import Path
+
+# Ensure root directory is in sys.path regardless of launch cwd
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
