@@ -15,6 +15,7 @@ import NewRuleModal from './components/NewRuleModal';
 import NewFactModal from './components/NewFactModal';
 import ReviewNotesModal from './components/ReviewNotesModal';
 import DemoLoginModal, { DEMO_USERS } from './components/DemoLoginModal';
+import LoginPage from './components/LoginPage';
 import { api } from './api';
 import { CheckCircle2, AlertCircle, Info, X, ShieldAlert, LogIn } from 'lucide-react';
 
@@ -88,7 +89,7 @@ export default function App() {
       const saved = localStorage.getItem('brandroute_demo_user');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEMO_USERS[0]; // Rakesh D. (Compliance Lead)
+    return null; // Require login before opening page
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isNewDraftOpen, setIsNewDraftOpen] = useState(false);
@@ -466,64 +467,32 @@ export default function App() {
       {/* Background Isometric Governance Campus Scene */}
       <IsometricScene />
 
-      {/* Floating Top Navigation Pill Bar */}
-      <TopNav
-        activeView={activeView}
-        onNavigate={handleNavigate}
-        draftsCount={drafts.length}
-        rulesCount={rules.length}
-        factsCount={facts.length}
-        openFindingsCount={openFindingsCount}
-        brands={brands}
-        selectedBrand={selectedBrand}
-        onSelectBrand={handleSelectBrand}
-        onSeedDemo={handleSeedDemo}
-        isSeeding={isSeeding}
-        systemInfo={systemInfo}
-        health={health}
-        onOpenNewDraftModal={() => setIsNewDraftOpen(true)}
-        currentUser={currentUser}
-        onOpenLoginModal={() => setIsLoginModalOpen(true)}
-      />
+      {/* Login Screen Gate or Main Authenticated Application */}
+      {!currentUser ? (
+        <LoginPage onLogin={handleLogin} />
+      ) : (
+        <>
+          {/* Floating Top Navigation Pill Bar */}
+          <TopNav
+            activeView={activeView}
+            onNavigate={handleNavigate}
+            draftsCount={drafts.length}
+            rulesCount={rules.length}
+            factsCount={facts.length}
+            openFindingsCount={openFindingsCount}
+            brands={brands}
+            selectedBrand={selectedBrand}
+            onSelectBrand={handleSelectBrand}
+            onSeedDemo={handleSeedDemo}
+            isSeeding={isSeeding}
+            systemInfo={systemInfo}
+            health={health}
+            onOpenNewDraftModal={() => setIsNewDraftOpen(true)}
+            currentUser={currentUser}
+            onOpenLoginModal={() => setIsLoginModalOpen(true)}
+          />
 
-      {/* Main Layout Area */}
-      {!currentUser && (
-        <div style={{ maxWidth: '1400px', margin: '0 auto 14px', padding: '0 24px' }}>
-          <div
-            className="glass-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 20px',
-              borderRadius: '16px',
-              background: 'rgba(255, 247, 237, 0.92)',
-              border: '1px solid #FED7AA',
-              flexWrap: 'wrap',
-              gap: '12px',
-              boxShadow: '0 4px 14px rgba(255, 106, 26, 0.08)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <ShieldAlert size={18} color="#EA580C" />
-              <span style={{ fontSize: '0.85rem', color: '#9A3412', fontWeight: 600 }}>
-                Guest Mode Active: Sign in with an enterprise demo persona to test role-based governance approvals and CMS publication checks.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsLoginModalOpen(true)}
-              className="btn btn-primary"
-              style={{ padding: '6px 16px', fontSize: '0.8rem' }}
-            >
-              <LogIn size={14} />
-              <span>Sign In with Demo Persona</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="main-layout">
+          <div className="main-layout">
         <main className="content-body" role="main">
           {activeView === 'dashboard' && (
             <DashboardView
@@ -607,6 +576,8 @@ export default function App() {
           isHealthy={health?.status === 'healthy'}
         />
       </div>
+    </>
+  )}
 
       {/* Modals */}
       <DemoLoginModal

@@ -1,9 +1,9 @@
 import React from 'react';
 
 /**
- * IsometricScene — Part 1 of the user's design reference.
- * Renders the 3D isometric futuristic AI governance office room (Image 2)
- * as a full-bleed, low-contrast ambient backdrop with glowing neon cyan accents.
+ * IsometricScene
+ * Renders the 3D isometric AI governance control room (from user uploaded image)
+ * as the permanent, full-bleed UI background with crisp detail and ambient lighting.
  */
 export default function IsometricScene() {
   return (
@@ -18,61 +18,60 @@ export default function IsometricScene() {
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
-        background: '#EDF3FA'
+        background: '#EDF4FA'
       }}
       aria-hidden="true"
     >
-      {/* 3D Isometric Office Room Image from User Upload */}
+      {/* 3D Isometric AI Office Background Image */}
       <img
         src="/isometric-office.png"
-        alt="Isometric AI Governance Control Room"
+        alt="Isometric AI Governance Room"
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
           objectPosition: 'center',
-          opacity: 0.38,
-          filter: 'blur(2px) saturate(1.15) contrast(0.98)',
-          transform: 'scale(1.04)',
-          transition: 'all 0.5s ease'
+          opacity: 0.82,
+          filter: 'contrast(1.02) saturate(1.08) brightness(1.02)',
+          transform: 'scale(1.02)',
+          transition: 'opacity 0.4s ease'
         }}
       />
 
-      {/* Ambient Lighting Gradients over the Room */}
+      {/* Ambient Lighting Sheen (Preserves text readability over the 3D room) */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 25%, rgba(255, 255, 255, 0.45) 0%, rgba(225, 238, 252, 0.75) 60%, rgba(215, 230, 248, 0.92) 100%)',
-          mixBlendMode: 'screen',
+          background: 'radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.45) 0%, rgba(235, 244, 253, 0.6) 65%, rgba(220, 235, 250, 0.82) 100%)',
           pointerEvents: 'none'
         }}
       />
 
-      {/* Subtle Cyan/Teal Glowing Accent Mesh */}
+      {/* Subtle Cyan Hologram Light Bloom (matching the image's cyan glows) */}
       <div
         style={{
           position: 'absolute',
-          top: '20%',
-          right: '15%',
-          width: '500px',
-          height: '500px',
+          top: '25%',
+          right: '18%',
+          width: '450px',
+          height: '450px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0, 207, 232, 0.15) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 70%)',
-          filter: 'blur(40px)',
+          background: 'radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, rgba(59, 130, 246, 0.05) 50%, transparent 70%)',
+          filter: 'blur(35px)',
           pointerEvents: 'none'
         }}
       />
       <div
         style={{
           position: 'absolute',
-          bottom: '10%',
-          left: '10%',
-          width: '450px',
-          height: '450px',
+          bottom: '15%',
+          left: '12%',
+          width: '400px',
+          height: '400px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255, 178, 122, 0.16) 0%, rgba(255, 106, 26, 0.08) 50%, transparent 70%)',
-          filter: 'blur(40px)',
+          background: 'radial-gradient(circle, rgba(255, 120, 30, 0.1) 0%, transparent 65%)',
+          filter: 'blur(35px)',
           pointerEvents: 'none'
         }}
       />
