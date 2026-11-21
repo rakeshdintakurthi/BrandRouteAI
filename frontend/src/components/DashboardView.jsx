@@ -8,20 +8,16 @@ import {
   ArrowRight,
   Plus,
   Sparkles,
-  BarChart2,
-  Activity,
+  Zap,
   Check,
   ChevronRight,
-  FileCheck2,
-  Layers,
-  Search,
-  Filter,
+  MoreHorizontal,
   TrendingUp,
-  Cpu,
-  ChevronDown,
-  Compass,
-  Zap,
-  Radio
+  TrendingDown,
+  Activity,
+  Layers,
+  Circle,
+  AlertCircle
 } from 'lucide-react';
 
 export default function DashboardView({
@@ -33,612 +29,472 @@ export default function DashboardView({
   onOpenNewDraftModal,
   onNavigate
 }) {
-  const [barTimeRange, setBarTimeRange] = useState('7d'); // '7d', '30d', '90d'
-  const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
-  const [overviewRange, setOverviewRange] = useState('Today');
+  const [checklist, setChecklist] = useState([
+    { id: 1, label: 'Configure brand visual palette & logo bounds', done: true },
+    { id: 2, label: 'Deploy deterministic regex & claims rules', done: true },
+    { id: 3, label: 'Calibrate automated brand voice stylistic DNA', done: true },
+    { id: 4, label: 'Set up pre-publish CMS approval workflows', done: false },
+  ]);
 
-  // Compute stats
+  const toggleCheck = (id) => {
+    setChecklist(prev => prev.map(item => item.id === id ? { ...item, done: !item.done } : item));
+  };
+
+  const completedCount = checklist.filter(i => i.done).length;
+  const progressPercent = Math.round((completedCount / checklist.length) * 100);
+
+  // Compute stats from live data
   const totalDrafts = drafts.length;
-  const inReviewCount = drafts.filter(d => d.review_status === 'In Review').length;
   const approvedCount = drafts.filter(d => d.review_status === 'Approved').length;
+  const inReviewCount = drafts.filter(d => d.review_status === 'In Review').length;
   const changesCount = drafts.filter(d => d.review_status === 'Changes Requested').length;
-  const openIssuesCount = drafts.reduce((acc, d) => acc + (d.review_status === 'Changes Requested' ? 2 : 0), 0);
-
-  // Dynamic Bar Chart datasets (Nexora Style: Striped Inactive, Solid Orange Active)
-  const barDataSets = {
-    '7d': [
-      { label: 'Mon', audits: 32, compliant: 28 },
-      { label: 'Tue', audits: 48, compliant: 44 },
-      { label: 'Wed', audits: 39, compliant: 35 },
-      { label: 'Thu', audits: 85, compliant: 79, active: true },
-      { label: 'Fri', audits: 62, compliant: 58 },
-      { label: 'Sat', audits: 24, compliant: 22 },
-      { label: 'Sun', audits: 18, compliant: 18 }
-    ],
-    '30d': [
-      { label: 'W1', audits: 210, compliant: 195 },
-      { label: 'W2', audits: 280, compliant: 260 },
-      { label: 'W3', audits: 340, compliant: 320, active: true },
-      { label: 'W4', audits: 290, compliant: 275 }
-    ],
-    '90d': [
-      { label: 'Month 1', audits: 820, compliant: 780 },
-      { label: 'Month 2', audits: 960, compliant: 910, active: true },
-      { label: 'Month 3', audits: 890, compliant: 850 }
-    ]
-  };
-
-  const activeBars = barDataSets[barTimeRange] || barDataSets['7d'];
-  const maxBarValue = Math.max(...activeBars.map(b => b.audits));
-
-  // Radar chart dimensions
-  const radarAxes = [
-    { label: 'Tone Voice', value: 92, angle: 0 },
-    { label: 'SLA Claims', value: 98, angle: 60 },
-    { label: 'Terminology', value: 88, angle: 120 },
-    { label: 'Legal Facts', value: 96, angle: 180 },
-    { label: 'Casing Exact', value: 90, angle: 240 },
-    { label: 'Brevity Style', value: 84, angle: 300 }
-  ];
-
-  const getRadarPoint = (angleDeg, valuePercent) => {
-    const rad = (angleDeg - 90) * (Math.PI / 180);
-    const r = (valuePercent / 100) * 70;
-    return {
-      x: 100 + r * Math.cos(rad),
-      y: 100 + r * Math.sin(rad)
-    };
-  };
-
-  const radarPolygonPoints = radarAxes
-    .map(axis => {
-      const pt = getRadarPoint(axis.angle, axis.value);
-      return `${pt.x},${pt.y}`;
-    })
-    .join(' ');
-
-  const reviewProgressPct = totalDrafts > 0 ? Math.round(((approvedCount + inReviewCount) / totalDrafts) * 100) : 74;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in">
 
       {/* =========================================================
-          TOP FLOATING CALLOUT: CONGRATULATIONS RAKESH
+          HERO GREETING (OpsPulse Reference: Image 3)
           ========================================================= */}
-      <div className="nexora-greeting-card glass-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '16px',
-            background: 'var(--accent-gradient)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff',
-            boxShadow: 'var(--accent-glow)'
-          }}>
-            <Sparkles size={24} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1F2A44', letterSpacing: '-0.02em', marginBottom: '2px' }}>
-              Congratulations Rakesh! 🎉
-            </h2>
-            <p style={{ fontSize: '0.84rem', color: '#6B7A99', lineHeight: '1.4' }}>
-              BrandRoute AI achieved <strong style={{ color: '#1F2A44' }}>98.4% brand compliance fidelity</strong> across all active channels for <strong>{brand?.name || 'AetherCloud'}</strong>.
-            </p>
-          </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1F2A44', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+            Welcome Back, Rakesh
+          </h1>
+          <p style={{ fontSize: '0.86rem', color: '#6B7A99' }}>
+            Your AI brand governance control room — monitoring tone, claims, costs, and compliance.
+          </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            type="button"
-            className="btn-pill-orange"
-            onClick={onOpenNewDraftModal}
-          >
-            <Plus size={16} />
-            <span>Submit New Draft</span>
-          </button>
-          <button
-            type="button"
-            className="btn-pill-white"
-            onClick={() => onNavigate('audit')}
-          >
-            <span>Review Studio</span>
-            <ArrowRight size={14} />
-          </button>
+          <span style={{
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            padding: '4px 10px',
+            borderRadius: '9999px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid #DCE6F5',
+            color: '#1F2A44'
+          }}>
+            Brand: <strong>{brand?.name || 'AetherCloud'}</strong>
+          </span>
         </div>
       </div>
 
       {/* =========================================================
-          ROW 1: FREE-FLOATING CARD CLUSTER (NEXORA REFERENCE LAYOUT)
+          ROW 1: GETTING STARTED + COMPLIANCE PULSE GAUGE (Image 3)
           ========================================================= */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1.1fr 1.3fr 1fr',
-        gap: '20px',
-        alignItems: 'stretch'
-      }} className="dashboard-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }} className="dashboard-grid">
 
-        {/* 1. COMMAND OVERVIEW CARD */}
-        <div className="glass-card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1F2A44' }}>Command Overview</h3>
-              <p style={{ fontSize: '0.74rem', color: '#6B7A99' }}>Governance throughput</p>
-            </div>
-            <select
-              value={overviewRange}
-              onChange={(e) => setOverviewRange(e.target.value)}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #DCE6F5',
-                borderRadius: '9999px',
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: '#1F2A44',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(60,100,160,0.04)'
-              }}
-            >
-              <option value="Today">Today</option>
-              <option value="7 Days">7 Days</option>
-              <option value="30 Days">30 Days</option>
-            </select>
+        {/* 1. GETTING STARTED CHECKLIST CARD */}
+        <div className="glass-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1F2A44' }}>Getting Started</h3>
+            <button type="button" style={{ background: 'none', border: 'none', color: '#9AA7BD', cursor: 'pointer' }}>
+              <MoreHorizontal size={18} />
+            </button>
           </div>
+          <p style={{ fontSize: '0.78rem', color: '#6B7A99', marginBottom: '14px' }}>
+            The list below highlights the key governance milestones verified for enterprise publishing
+          </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* Stat Row 1 */}
-            <div className="stat-row-item">
-              <div className="stat-icon-tile">
-                <ShieldCheck size={20} />
-              </div>
-              <div className="stat-info-left">
-                <div className="stat-label-title">Compliance Rate</div>
-                <div className="stat-subtext-muted">Total governed releases</div>
-              </div>
-              <div className="stat-value-right">
-                <span>98.4%</span>
-                <span className="stat-trend-up">↑</span>
-              </div>
+          {/* Progress Bar with Green Gradient & Percentage */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+            <div style={{ flex: 1, height: '8px', borderRadius: '9999px', background: '#E2EDFA', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${progressPercent}%`,
+                  height: '100%',
+                  borderRadius: '9999px',
+                  background: 'linear-gradient(90deg, #28C76F 0%, #10B981 100%)',
+                  transition: 'width 0.4s ease'
+                }}
+              />
             </div>
-
-            {/* Stat Row 2 */}
-            <div className="stat-row-item">
-              <div className="stat-icon-tile" style={{ color: '#3B82F6', background: '#E8F1FC' }}>
-                <CheckCircle2 size={20} />
-              </div>
-              <div className="stat-info-left">
-                <div className="stat-label-title">Verified Claims</div>
-                <div className="stat-subtext-muted">{facts.length} active certified facts</div>
-              </div>
-              <div className="stat-value-right">
-                <span>100%</span>
-                <span className="stat-trend-up">↑</span>
-              </div>
-            </div>
-
-            {/* Stat Row 3 */}
-            <div className="stat-row-item">
-              <div className="stat-icon-tile" style={{ color: '#28C76F', background: '#E8F9EE' }}>
-                <FileText size={20} />
-              </div>
-              <div className="stat-info-left">
-                <div className="stat-label-title">Active Audits</div>
-                <div className="stat-subtext-muted">{totalDrafts} publications analyzed</div>
-              </div>
-              <div className="stat-value-right">
-                <span>{totalDrafts}</span>
-                <span className="stat-trend-up">↑</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. CENTER SCENE CALLOUT + REVIEW DETAILS CARD */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-          {/* Floating Leader Callout: Active Reviews Progress */}
-          <div className="scene-leader-callout glass-card">
-            <span className="leader-dot" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Radio size={14} color="#FF6A1A" />
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1F2A44' }}>Active Reviews Progress</span>
-              </div>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FF6A1A' }}>{reviewProgressPct}%</span>
-            </div>
-
-            {/* Orange Progress Bar with Knob */}
-            <div className="orange-progress-bar">
-              <div className="orange-progress-fill" style={{ width: `${reviewProgressPct}%` }}>
-                <span className="progress-knob" />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#6B7A99' }}>
-              <span>{approvedCount} Approved Publications</span>
-              <span>{inReviewCount} In Compliance Review</span>
-            </div>
-          </div>
-
-          {/* Review Details (Tracking Details Style Card) */}
-          <div className="glass-card" style={{ padding: '18px 22px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7A99', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  ACTIVE REVIEW DISPATCH
-                </span>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1F2A44' }}>
-                  Review ID: #BP-4892
-                </h4>
-              </div>
-              <span className="status-badge in-review" style={{ background: '#FFF3EB', color: '#FF6A1A', border: '1px solid #FFD0B3' }}>
-                In review
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: 'rgba(255,255,255,0.7)', padding: '10px 14px', borderRadius: '12px', border: '1px solid #E2EDFA' }}>
-              <div>
-                <span style={{ fontSize: '0.68rem', color: '#6B7A99', display: 'block' }}>TARGET PROFILE</span>
-                <strong style={{ fontSize: '0.84rem', color: '#1F2A44' }}>{brand?.name || 'AetherCloud'}</strong>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.68rem', color: '#6B7A99', display: 'block' }}>AUDIT DESTINATION</span>
-                <strong style={{ fontSize: '0.84rem', color: '#1F2A44' }}>Global Press & CMS</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. SYSTEM ALERTS CARD */}
-        <div className="glass-card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1F2A44' }}>System Alerts</h3>
-              <p style={{ fontSize: '0.74rem', color: '#6B7A99' }}>Governance telemetry</p>
-            </div>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#28C76F', boxShadow: '0 0 6px #28C76F' }} />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div className="alert-tile-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
-                  <AlertTriangle size={18} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1F2A44' }}>Open Review Issues</div>
-                  <div style={{ fontSize: '0.72rem', color: '#6B7A99' }}>Action required in drafts</div>
-                </div>
-              </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#DC2626', background: '#FEE2E2', padding: '2px 8px', borderRadius: '9999px' }}>
-                {changesCount > 0 ? `${changesCount} Flagged` : '0 Critical'}
-              </span>
-            </div>
-
-            <div className="alert-tile-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#EBF2FE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB' }}>
-                  <Zap size={18} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1F2A44' }}>Engine Latency</div>
-                  <div style={{ fontSize: '0.72rem', color: '#6B7A99' }}>Deterministic rule pass</div>
-                </div>
-              </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#2563EB', background: '#EBF2FE', padding: '2px 8px', borderRadius: '9999px' }}>
-                24ms
-              </span>
-            </div>
-
-            <div className="alert-tile-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#FFF3EB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF6A1A' }}>
-                  <Cpu size={18} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1F2A44' }}>AI Vision & Fallback</div>
-                  <div style={{ fontSize: '0.72rem', color: '#6B7A99' }}>Local engine certified</div>
-                </div>
-              </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#FF6A1A', background: '#FFF3EB', padding: '2px 8px', borderRadius: '9999px' }}>
-                Active
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* =========================================================
-          ROW 2: PERFORMANCE INSIGHTS (STRIPED BARS) + SNAPSHOT + GAUGE
-          ========================================================= */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1.4fr 1fr 1fr',
-        gap: '20px',
-        alignItems: 'stretch'
-      }} className="dashboard-grid">
-
-        {/* 1. PERFORMANCE INSIGHTS (Bar Chart with Striped Inactive & Solid Orange Active) */}
-        <div className="glass-card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-            <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1F2A44' }}>Performance Insights</h3>
-              <p style={{ fontSize: '0.74rem', color: '#6B7A99' }}>Audited releases vs compliance</p>
-            </div>
-            {/* Time range pills */}
-            <div style={{ display: 'flex', gap: '4px', background: '#EBF2FA', padding: '3px', borderRadius: '9999px' }}>
-              {['7d', '30d', '90d'].map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setBarTimeRange(t)}
-                  style={{
-                    border: 'none',
-                    background: barTimeRange === t ? 'var(--accent-gradient)' : 'transparent',
-                    color: barTimeRange === t ? '#FFFFFF' : '#6B7A99',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: '9999px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Bar Chart Container */}
-          <div className="bar-chart-container">
-            {activeBars.map((bar, i) => {
-              const heightPct = Math.max(15, Math.round((bar.audits / maxBarValue) * 100));
-              const isHovered = hoveredBarIndex === i;
-              const isActive = bar.active || isHovered;
-              return (
-                <div
-                  key={i}
-                  className="bar-column"
-                  onMouseEnter={() => setHoveredBarIndex(i)}
-                  onMouseLeave={() => setHoveredBarIndex(null)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {isActive && (
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#FF6A1A', marginBottom: '2px' }}>
-                      {bar.audits}
-                    </span>
-                  )}
-                  <div
-                    className={`bar-pill ${isActive ? 'solid-active' : 'striped-inactive'}`}
-                    style={{ height: `${heightPct}%` }}
-                  />
-                  <span className="bar-label">{bar.label}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #EBF2FA' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#6B7A99' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gradient)' }} />
-              <span>Active Batch</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#6B7A99' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#DCE7F5' }} />
-              <span>Historical Cadence</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. RULES & FACTS SNAPSHOT (Inventory Snapshot Style) */}
-        <div className="glass-card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1F2A44' }}>Rules & Facts Snapshot</h3>
-              <p style={{ fontSize: '0.74rem', color: '#6B7A99' }}>Policy constraints inventory</p>
-            </div>
-            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FF6A1A' }}>
-              {rules.length + facts.length}
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#28C76F' }}>
+              {progressPercent}%
             </span>
           </div>
 
-          <div style={{ marginTop: '12px' }}>
-            <div className="stepped-bar-row">
-              <span className="stepped-label">Terminology</span>
-              <div className="stepped-track">
-                <div className="stepped-fill" style={{ width: '85%' }} />
+          {/* Checklist items */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {checklist.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => toggleCheck(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: '8px',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.7)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                {item.done ? (
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#D5F6E3', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#28C76F' }}>
+                    <Check size={13} strokeWidth={3} />
+                  </div>
+                ) : (
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #CBD5E1' }} />
+                )}
+                <span style={{
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  color: item.done ? '#1F2A44' : '#6B7A99',
+                  textDecoration: item.done ? 'none' : 'none'
+                }}>
+                  {item.label}
+                </span>
               </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1F2A44' }}>{rules.filter(r => r.category === 'Terminology').length || 3}</span>
-            </div>
-
-            <div className="stepped-bar-row">
-              <span className="stepped-label">SLA Claims</span>
-              <div className="stepped-track">
-                <div className="stepped-fill" style={{ width: '70%' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1F2A44' }}>{rules.filter(r => r.category.includes('Claims')).length || 2}</span>
-            </div>
-
-            <div className="stepped-bar-row">
-              <span className="stepped-label">Tone & Style</span>
-              <div className="stepped-track">
-                <div className="stepped-fill" style={{ width: '60%' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1F2A44' }}>{rules.filter(r => r.category.includes('Tone')).length || 2}</span>
-            </div>
-
-            <div className="stepped-bar-row">
-              <span className="stepped-label">Legal Facts</span>
-              <div className="stepped-track">
-                <div className="stepped-fill" style={{ width: '92%' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1F2A44' }}>{facts.length}</span>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* 3. COMPLIANCE TRACKER GAUGE (Orange to Peach Gradient Arc) */}
-        <div className="glass-card" style={{ padding: '22px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1F2A44' }}>Compliance Tracker</h3>
-            <p style={{ fontSize: '0.74rem', color: '#6B7A99' }}>Governance health index</p>
+        {/* 2. COMPLIANCE PULSE (Segmented Arch Gauge - Image 3) */}
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1F2A44' }}>Compliance pulse</h3>
+            <button type="button" style={{ background: 'none', border: 'none', color: '#9AA7BD', cursor: 'pointer' }}>
+              <MoreHorizontal size={18} />
+            </button>
           </div>
 
-          {/* Semicircle Gauge (Nexora Orange-Peach Arc) */}
-          <div style={{ position: 'relative', width: '150px', height: '95px', marginTop: '10px' }}>
-            <svg width="150" height="95" viewBox="0 0 150 95">
-              <defs>
-                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#FF6A1A" />
-                  <stop offset="100%" stopColor="#FFB27A" />
-                </linearGradient>
-              </defs>
-              {/* Background Arc */}
+          {/* Three-Segmented Gauge SVG */}
+          <div style={{ position: 'relative', width: '200px', height: '110px', margin: '10px auto 4px auto' }}>
+            <svg width="200" height="110" viewBox="0 0 200 110">
+              {/* Segment 1: Orange (Left arc) */}
               <path
-                d="M 20 85 A 55 55 0 0 1 130 85"
+                d="M 25 100 A 75 75 0 0 1 65 37"
                 fill="none"
-                stroke="#E2EDFA"
-                strokeWidth="12"
+                stroke="#FF6A1A"
+                strokeWidth="16"
                 strokeLinecap="round"
               />
-              {/* Active Orange-Peach Arc */}
+              {/* Segment 2: Green (Top center arc) */}
               <path
-                d="M 20 85 A 55 55 0 0 1 130 85"
+                d="M 75 30 A 75 75 0 0 1 125 30"
                 fill="none"
-                stroke="url(#gaugeGrad)"
-                strokeWidth="12"
-                strokeDasharray="172.7"
-                strokeDashoffset="14"
+                stroke="#28C76F"
+                strokeWidth="16"
+                strokeLinecap="round"
+              />
+              {/* Segment 3: Blue (Right arc) */}
+              <path
+                d="M 135 37 A 75 75 0 0 1 175 100"
+                fill="none"
+                stroke="#3B82F6"
+                strokeWidth="16"
                 strokeLinecap="round"
               />
             </svg>
-            <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', textAlign: 'center' }}>
-              <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#1F2A44' }}>98.4%</span>
-              <span style={{ display: 'block', fontSize: '0.68rem', color: '#28C76F', fontWeight: 700 }}>EXCEPTIONAL</span>
+            <div style={{ position: 'absolute', bottom: '2px', left: '0', right: '0', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.72rem', color: '#6B7A99', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>
+                Policy Coverage
+              </span>
+              <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1F2A44', lineHeight: '1.1' }}>
+                98%
+              </span>
             </div>
           </div>
 
-          <p style={{ fontSize: '0.74rem', color: '#6B7A99', marginTop: '8px' }}>
-            Zero unresolved critical claims detected.
-          </p>
+          {/* Subrows with Active / Draft status pills */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', borderTop: '1px solid #EBF2FA', paddingTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+              <span style={{ color: '#4A5568', fontWeight: 600 }}>Data Privacy & SLA (DAT-001)</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', background: '#D5F6E3', color: '#16A34A' }}>
+                Active
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+              <span style={{ color: '#4A5568', fontWeight: 600 }}>Approval Gates & Facts (APR-002)</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', background: '#D5F6E3', color: '#16A34A' }}>
+                Active
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+              <span style={{ color: '#4A5568', fontWeight: 600 }}>Prohibited Claims Filter (SEC-003)</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', background: '#FFF3EB', color: '#EA580C' }}>
+                Enforced
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* =========================================================
-          ROW 3: GOVERNED MARKETING DRAFTS LIST (GLASS TILES)
+          ROW 2: 4 METRIC SPARKLINE CARDS (Image 3)
           ========================================================= */}
-      <div className="glass-card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1F2A44' }}>
-              Governed Marketing Publications
-            </h3>
-            <p style={{ fontSize: '0.78rem', color: '#6B7A99' }}>
-              Editorial queue with deterministic rule validation and human sign-off
-            </p>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: '16px'
+      }}>
+        {/* Card 1: Token Throughput */}
+        <div className="glass-card" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#6B7A99' }}>Token / Words</span>
+            <MoreHorizontal size={16} color="#9AA7BD" />
+          </div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#1F2A44', lineHeight: '1.2' }}>
+            2.4M
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#28C76F', fontWeight: 700, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>↑ 18%</span>
+            <span style={{ color: '#9AA7BD', fontWeight: 500 }}>Compare from last 24hrs</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              type="button"
-              className="btn-pill-orange"
-              onClick={onOpenNewDraftModal}
-            >
-              <Plus size={15} />
-              <span>Submit Draft</span>
-            </button>
-            <button
-              type="button"
-              className="btn-pill-white"
-              onClick={() => onNavigate('audit')}
-            >
-              <span>Open Studio</span>
-              <ArrowRight size={14} />
-            </button>
+          {/* Bar sparkline */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '36px', marginTop: '12px' }}>
+            {[35, 50, 20, 65, 80, 45, 90, 70, 85, 60, 95, 40, 75, 85, 100].map((h, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: `${h}%`,
+                  background: i % 4 === 0 ? '#FF6A1A' : '#28C76F',
+                  borderRadius: '2px',
+                  opacity: 0.85
+                }}
+              />
+            ))}
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {drafts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#6B7A99' }}>
-              No drafts in queue. Click "Submit Draft" above to begin.
-            </div>
-          ) : (
-            drafts.map((draft) => {
-              const statusClass = draft.review_status.toLowerCase().replace(' ', '-');
-              return (
-                <div
-                  key={draft.id}
-                  onClick={() => onSelectDraft(draft)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.82)',
-                    border: '1px solid rgba(220, 230, 245, 0.9)',
-                    borderRadius: '16px',
-                    padding: '14px 20px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '12px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#FFFFFF';
-                    e.currentTarget.style.borderColor = '#FFB27A';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.82)';
-                    e.currentTarget.style.borderColor = 'rgba(220, 230, 245, 0.9)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div style={{ flex: '1 1 260px', minWidth: '0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1F2A44' }}>
-                        {draft.title}
-                      </span>
-                      <span style={{
-                        fontSize: '0.72rem',
-                        color: '#FF6A1A',
-                        background: '#FFF3EB',
-                        padding: '1px 8px',
-                        borderRadius: '9999px',
-                        fontWeight: 700
-                      }}>
-                        {draft.channel}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.76rem', color: '#6B7A99' }}>
-                      Author: <strong style={{ color: '#1F2A44' }}>{draft.author}</strong> • Last Updated: {new Date(draft.updated_at).toLocaleDateString()}
-                    </div>
-                  </div>
+        {/* Card 2: Cost Savings */}
+        <div className="glass-card" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#6B7A99' }}>Governance Cost</span>
+            <MoreHorizontal size={16} color="#9AA7BD" />
+          </div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#1F2A44', lineHeight: '1.2' }}>
+            $127
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#28C76F', fontWeight: 700, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>↓ 15%</span>
+            <span style={{ color: '#9AA7BD', fontWeight: 500 }}>Compare from last 24hrs</span>
+          </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-                    <span className={`status-badge ${statusClass}`}>
-                      {draft.review_status}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn-pill-orange btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectDraft(draft);
+          {/* Curve Area Sparkline */}
+          <div style={{ height: '36px', marginTop: '12px' }}>
+            <svg width="100%" height="36" viewBox="0 0 100 36" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#28C76F" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#28C76F" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 0 32 Q 25 30, 45 22 T 85 8 L 100 24 L 100 36 L 0 36 Z"
+                fill="url(#curveGrad)"
+              />
+              <path
+                d="M 0 32 Q 25 30, 45 22 T 85 8 L 100 24"
+                fill="none"
+                stroke="#28C76F"
+                strokeWidth="2"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 3: Success Rate */}
+        <div className="glass-card" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#6B7A99' }}>Success Rate</span>
+            <MoreHorizontal size={16} color="#9AA7BD" />
+          </div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#1F2A44', lineHeight: '1.2' }}>
+            98.4%
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#28C76F', fontWeight: 700, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>↑ 2.4%</span>
+            <span style={{ color: '#9AA7BD', fontWeight: 500 }}>Compare from last month</span>
+          </div>
+
+          {/* Bar sparkline */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '36px', marginTop: '12px' }}>
+            {[45, 60, 40, 75, 85, 60, 95, 80, 90, 85, 100, 70, 85, 90, 98].map((h, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: `${h}%`,
+                  background: '#28C76F',
+                  borderRadius: '2px',
+                  opacity: 0.8
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Card 4: P95 Latency */}
+        <div className="glass-card" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#6B7A99' }}>P95 Latency</span>
+            <MoreHorizontal size={16} color="#9AA7BD" />
+          </div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#1F2A44', lineHeight: '1.2' }}>
+            24ms
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#FF6A1A', fontWeight: 700, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>↓ 12%</span>
+            <span style={{ color: '#9AA7BD', fontWeight: 500 }}>Compare from last month</span>
+          </div>
+
+          {/* Multi-color sparkline */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '36px', marginTop: '12px' }}>
+            {[30, 40, 60, 50, 70, 85, 60, 40, 75, 90, 65, 80, 55, 45, 30].map((h, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: `${h}%`,
+                  background: i % 3 === 0 ? '#FF6A1A' : '#FFC107',
+                  borderRadius: '2px',
+                  opacity: 0.85
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================
+          ROW 3: 30-DAY QUALITY FORECAST + LIVE RUNS STREAM TABLE (Image 3)
+          ========================================================= */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.3fr', gap: '20px' }} className="dashboard-grid">
+
+        {/* 1. 30-DAY FORECAST & PIPELINE SEGMENTS */}
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6B7A99', display: 'block' }}>
+              30-day Quality & Review Forecast
+            </span>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#1F2A44', margin: '4px 0 2px 0' }}>
+              99.2%
+            </div>
+            <p style={{ fontSize: '0.74rem', color: '#28C76F', fontWeight: 600 }}>
+              ↑ Projected compliance fidelity for next 30 days
+            </p>
+          </div>
+
+          {/* Segmented Progress Bar matching Image 3 (Blue 60%, Orange 30%, Green 45%) */}
+          <div style={{ margin: '20px 0 14px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '6px' }}>
+              <span style={{ color: '#3B82F6' }}>60% Compliant</span>
+              <span style={{ color: '#FF6A1A' }}>30% In Review</span>
+              <span style={{ color: '#28C76F' }}>45% Approved</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '4px', height: '14px', borderRadius: '9999px', overflow: 'hidden' }}>
+              <div style={{ width: '45%', background: '#3B82F6', borderRadius: '9999px 0 0 9999px' }} />
+              <div style={{ width: '25%', background: '#FF6A1A' }} />
+              <div style={{ width: '30%', background: '#28C76F', borderRadius: '0 9999px 9999px 0' }} />
+            </div>
+
+            {/* Legend dots */}
+            <div style={{ display: 'flex', gap: '16px', marginTop: '10px', fontSize: '0.72rem', color: '#6B7A99' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3B82F6' }} /> Unused
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#FF6A1A' }} /> Used
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#28C76F' }} /> Reserved
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Alert / Confidence Box */}
+          <div style={{
+            background: 'rgba(255, 193, 7, 0.12)',
+            border: '1px solid rgba(255, 193, 7, 0.35)',
+            borderRadius: '12px',
+            padding: '10px 14px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.78rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontWeight: 600 }}>
+              <AlertCircle size={15} color="#D97706" />
+              <span>Confidence:</span>
+            </div>
+            <strong style={{ color: '#92400E' }}>98% vs last month</strong>
+          </div>
+        </div>
+
+        {/* 2. LIVE RUNS STREAM TABLE (Image 3) */}
+        <div className="glass-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#28C76F', boxShadow: '0 0 6px #28C76F' }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#1F2A44' }}>Live Runs Stream</h3>
+            </div>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', background: '#E2EDFA', color: '#3B82F6' }}>
+              Last 50
+            </span>
+          </div>
+
+          {/* Live Table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #EBF2FA', color: '#9AA7BD', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '8px 6px' }}>Name</th>
+                  <th style={{ padding: '8px 6px' }}>Time</th>
+                  <th style={{ padding: '8px 6px' }}>Latency</th>
+                  <th style={{ padding: '8px 6px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drafts.slice(0, 5).map((draft, idx) => {
+                  const isBlocked = draft.review_status === 'Changes Requested';
+                  const isApproved = draft.review_status === 'Approved';
+                  return (
+                    <tr
+                      key={draft.id}
+                      onClick={() => onSelectDraft(draft)}
+                      style={{
+                        borderBottom: '1px solid #F1F5F9',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s ease'
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.7)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <span>Audit Draft</span>
-                      <ChevronRight size={13} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
+                      <td style={{ padding: '10px 6px', fontWeight: 700, color: '#1F2A44' }}>
+                        {draft.title.length > 28 ? draft.title.slice(0, 28) + '...' : draft.title}
+                      </td>
+                      <td style={{ padding: '10px 6px', color: '#6B7A99', fontSize: '0.75rem' }}>
+                        {idx === 0 ? '2 min ago' : idx === 1 ? '5 min ago' : `${(idx + 1) * 3} min ago`}
+                      </td>
+                      <td style={{ padding: '10px 6px', color: '#6B7A99', fontSize: '0.75rem' }}>
+                        {idx === 0 ? '2.5s' : idx === 1 ? '1.2s' : '3.8s'}
+                      </td>
+                      <td style={{ padding: '10px 6px' }}>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '9999px',
+                          background: isBlocked ? '#FEE2E2' : isApproved ? '#DCFCE7' : '#D5F6E3',
+                          color: isBlocked ? '#DC2626' : isApproved ? '#16A34A' : '#10B981'
+                        }}>
+                          {isBlocked ? 'Closed' : 'Live'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

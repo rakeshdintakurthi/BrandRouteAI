@@ -456,6 +456,7 @@ export default function App() {
         isSeeding={isSeeding}
         systemInfo={systemInfo}
         health={health}
+        onOpenNewDraftModal={() => setIsNewDraftOpen(true)}
       />
 
       {/* Main Layout Area */}
