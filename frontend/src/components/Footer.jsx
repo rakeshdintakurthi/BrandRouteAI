@@ -36,6 +36,21 @@ export default function Footer({ onNavigate, isHealthy = true }) {
                   </button>
                 </li>
                 <li>
+                  <button type="button" className="footer-link-btn" onClick={() => onNavigate('visual')}>
+                    Visual Governance
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="footer-link-btn" onClick={() => onNavigate('voice')}>
+                    Brand Voice Intelligence
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="footer-link-btn" onClick={() => onNavigate('cms')}>
+                    CMS Integrations Gate
+                  </button>
+                </li>
+                <li>
                   <button type="button" className="footer-link-btn" onClick={() => onNavigate('guidelines')}>
                     Brand Rules & Facts
                   </button>
@@ -53,7 +68,7 @@ export default function Footer({ onNavigate, isHealthy = true }) {
               <ul className="footer-nav-list">
                 <li>
                   <a
-                    href="https://github.com/Mobin72090/brandproof"
+                    href="https://github.com/rakeshdintakurthi/BrandRouteAI.git"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="footer-link-ext"
