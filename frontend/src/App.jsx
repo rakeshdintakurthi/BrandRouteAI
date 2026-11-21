@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
+import TopNav from './components/TopNav';
+import IsometricScene from './components/IsometricScene';
 import Footer from './components/Footer';
 import DashboardView from './components/DashboardView';
 import ContentAuditView from './components/ContentAuditView';
@@ -438,32 +438,28 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Sidebar Navigation (with Mobile Drawer support) */}
-      <Sidebar
+      {/* Background Isometric Governance Campus Scene */}
+      <IsometricScene />
+
+      {/* Floating Top Navigation Pill Bar */}
+      <TopNav
         activeView={activeView}
         onNavigate={handleNavigate}
         draftsCount={drafts.length}
         rulesCount={rules.length}
         factsCount={facts.length}
         openFindingsCount={openFindingsCount}
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
+        brands={brands}
+        selectedBrand={selectedBrand}
+        onSelectBrand={handleSelectBrand}
+        onSeedDemo={handleSeedDemo}
+        isSeeding={isSeeding}
+        systemInfo={systemInfo}
+        health={health}
       />
 
-      {/* Main Content Area */}
+      {/* Main Layout Area */}
       <div className="main-layout">
-        <Header
-          systemInfo={systemInfo}
-          health={health}
-          brands={brands}
-          selectedBrand={selectedBrand}
-          onSelectBrand={handleSelectBrand}
-          onSeedDemo={handleSeedDemo}
-          isSeeding={isSeeding}
-          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          isMobileMenuOpen={isMobileMenuOpen}
-        />
-
         <main className="content-body" role="main">
           {activeView === 'dashboard' && (
             <DashboardView

@@ -6,7 +6,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 export default function Footer({ onNavigate, isHealthy = true }) {
 
   return (
-    <footer className="app-footer">
+    <footer className="app-footer glass-card" style={{ margin: '32px 24px 24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.85)', background: 'rgba(255,255,255,0.8)' }}>
       <div className="footer-container">
         <div className="footer-top">
           <div className="footer-brand">
